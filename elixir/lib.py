@@ -20,50 +20,82 @@
 
 import subprocess, os
 
+# 获取当前文件所在目录的父目录的绝对路径
 CURRENT_DIR = os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + '/..')
 
+# 调用脚本并返回输出
+# 参数:
+#   *args: 传递给脚本的参数
+#   env: 环境变量字典
+# 返回:
+#   脚本的输出
 def script(*args, env=None):
+    # 将脚本路径与传递的参数组合
     args = (os.path.join(CURRENT_DIR, 'script.sh'),) + args
-    # subprocess.run was introduced in Python 3.5
-    # fall back to subprocess.check_output if it's not available
+    # 检查是否支持 subprocess.run 方法
+    # Python 3.5+ 支持 subprocess.run 方法
+    # 在这之前不支持 subprocess.run 方法，使用 subprocess.check_output 替代
     if hasattr(subprocess, 'run'):
+        # 使用 subprocess.run 执行脚本并捕获输出
         p = subprocess.run(args, stdout=subprocess.PIPE, env=env)
+        # 获取标准输出
         p = p.stdout
     else:
+        # 如果不支持 subprocess.run，使用 subprocess.check_output
         p = subprocess.check_output(args)
+    # 返回脚本输出
     return p
 
-# Invoke ./script.sh with the given arguments
-# Returns the list of output lines
-
+# 调用脚本并将输出按行分割成列表
+# 参数:
+#   *args: 传递给脚本的参数
+#   env: 环境变量字典
+# 返回:
+#   脚本输出的行列表
 def scriptLines(*args, env=None):
+    # 调用 script 函数获取脚本输出
     p = script(*args, env=env)
+    # 将输出按行分割
     p = p.split(b'\n')
+    # 删除最后一行（通常是空行）
     del p[-1]
+    # 返回行列表
     return p
 
+# 解码特殊字符
+# 参数:
+#   bstr: 需要解码的字节字符串
+# 返回:
+#   解码后的字节字符串
 def unescape(bstr):
+    # 定义替换表
     subs = (
         ('\1','\n'),
     )
+    # 遍历替换表并进行替换
     for a,b in subs:
         a = a.encode()
         b = b.encode()
         bstr = bstr.replace(a, b)
+    # 返回解码后的字节字符串
     return bstr
 
+# 将字节对象解码为字符串
+# 参数:
+#   byte_object: 需要解码的字节对象
+# 返回:
+#   解码后的字符串
 def decode(byte_object):
-    # decode('ascii') fails on special chars
-    # FIXME: major hack until we handle everything as bytestrings
+    # 尝试使用 utf-8 解码
     try:
         return byte_object.decode('utf-8')
+    # 如果解码失败，使用 iso-8859-1 解码
     except UnicodeDecodeError:
         return byte_object.decode('iso-8859-1')
 
-# List of tokens which we don't want to consider as identifiers
-# Typically for very frequent variable names and things redefined by #define
-# TODO: allow to have per project blacklists
-
+# 不希望被视为标识符的令牌列表
+# 通常用于非常频繁的变量名和通过 #define 重新定义的内容
+# TODO: 允许每个项目有自己的黑名单
 blacklist = (
     b'NULL',
     b'__',
@@ -169,7 +201,13 @@ blacklist = (
     b'x'
 )
 
+# 判断一个字节字符串是否为有效的标识符
+# 参数:
+#   bstr: 需要判断的字节字符串
+# 返回:
+#   如果是有效标识符返回 True，否则返回 False
 def isIdent(bstr):
+    # 检查长度是否小于 2 或在黑名单中或以 ~ 开头
     if (len(bstr) < 2 or
         bstr in blacklist or
         bstr.startswith(b'~')):
@@ -177,75 +215,113 @@ def isIdent(bstr):
     else:
         return True
 
+# 将不同类型的参数转换为字节字符串
+# 参数:
+#   arg: 需要转换的参数
+# 返回:
+#   转换后的字节字符串
 def autoBytes(arg):
+    # 如果参数是字符串，编码为字节字符串
     if type(arg) is str:
         arg = arg.encode()
+    # 如果参数是整数，转换为字符串再编码为字节字符串
     elif type(arg) is int:
         arg = str(arg).encode()
+    # 返回转换后的字节字符串
     return arg
 
+# 获取数据目录
+# 返回:
+#   数据目录的路径
 def getDataDir():
     try:
+        # 从环境变量中获取数据目录
         dir=os.environ['LXR_DATA_DIR']
     except KeyError:
+        # 如果环境变量未设置，打印错误信息并退出程序
         print(argv[0] + ': LXR_DATA_DIR needs to be set')
         exit(1)
+    # 返回数据目录
     return dir
 
+# 获取仓库目录
+# 返回:
+#   仓库目录的路径
 def getRepoDir():
     try:
+        # 从环境变量中获取仓库目录
         dir=os.environ['LXR_REPO_DIR']
     except KeyError:
+        # 如果环境变量未设置，打印错误信息并退出程序
         print(argv[0] + ': LXR_REPO_DIR needs to be set')
         exit(1)
+    # 返回仓库目录
     return dir
 
+# 获取当前项目的名称
 def currentProject():
+    # 返回 getDataDir() 所在目录的基名，即项目名称
     return os.path.basename(os.path.dirname(getDataDir()))
 
-# List all families supported by Elixir
+# 列出 Elixir 支持的所有家族
 families = ['A', 'B', 'C', 'D', 'K', 'M']
 
+# 检查给定的家族是否有效
 def validFamily(family):
+    # 如果家族在 families 列表中，则返回 True，否则返回 False
     return family in families
 
+# 根据文件名确定文件所属的家族
 def getFileFamily(filename):
+    # 分离文件名和扩展名
     name, ext = os.path.splitext(filename)
 
+    # 检查扩展名是否属于 C 语言或汇编文件
     if ext.lower() in ['.c', '.cc', '.cpp', '.c++', '.cxx', '.h', '.s'] :
+        # 返回 'C' 家族
         return 'C' # C file family and ASM
+    # 检查扩展名是否属于设备树文件
     elif ext.lower() in ['.dts', '.dtsi'] :
+        # 返回 'D' 家族
         return 'D' # Devicetree files
+    # 检查文件名前 7 个字符是否为 'kconfig' 且扩展名不是 '.rst'
     elif name.lower()[:7] in ['kconfig'] and not ext.lower() in ['.rst']:
-        # Some files are named like Kconfig-nommu so we only check the first 7 letters
-        # We also exclude documentation files that can be named kconfig
+        # 返回 'K' 家族
         return 'K' # Kconfig files
+    # 检查文件名前 8 个字符是否为 'makefile' 且扩展名不是 '.rst'
     elif name.lower()[:8] in ['makefile'] and not ext.lower() in ['.rst']:
+        # 返回 'M' 家族
         return 'M' # Makefiles
     else :
+        # 不属于任何已知家族，返回 None
         return None
 
-# 1 char values are file families
-# 2 chars values with a M are macros families
+# 兼容性列表，键为文件家族，值为兼容的家族列表
+# 1 字符值表示文件家族
+# 2 字符值带 'M' 表示宏家族
 compatibility_list = {
-    'C' : ['C', 'K'],
-    'K' : ['K'],
-    'D' : ['D', 'CM'],
-    'M' : ['K']
+    'C': ['C', 'K'],  # C 文件家族兼容 C 和 K 家族
+    'K': ['K'],       # K 家族只兼容 K 家族
+    'D': ['D', 'CM'], # D 文件家族兼容 D 和 CM 宏家族
+    'M': ['K']        # M 家族兼容 K 家族
 }
 
-# Check if families are compatible
-# First argument can be a list of different families
-# Second argument is the key for choosing the right array in the compatibility list
+# 检查家族是否兼容
+# 第一个参数可以是不同家族的列表
+# 第二个参数是用于选择兼容性列表中正确数组的键
 def compatibleFamily(file_family, requested_family):
+    # 检查 file_family 中是否有任何一个家族在 compatibility_list[requested_family] 中
     return any(item in file_family for item in compatibility_list[requested_family])
 
-# Check if a macro is compatible with the requested family
-# First argument can be a list of different families
-# Second argument is the key for choosing the right array in the compatibility list
+# 检查宏是否与请求的家族兼容
+# 第一个参数可以是不同家族的列表
+# 第二个参数是用于选择兼容性列表中正确数组的键
 def compatibleMacro(macro_family, requested_family):
-    result = False
+    result = False  # 初始化结果为 False
     for item in macro_family:
+        # 将当前家族名后缀加上 'M'
         item += 'M'
+        # 检查当前宏家族是否在 compatibility_list[requested_family] 中
         result = result or item in compatibility_list[requested_family]
+    # 返回最终结果
     return result

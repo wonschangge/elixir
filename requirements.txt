@@ -1,11 +1,13 @@
+# 指定 Jinja2 的版本以确保模板渲染功能
 Jinja2==3.1.2
+# 指定 Pygments 的版本以确保代码高亮功能
 Pygments~=2.18.0
-# TODO replace with a pypi published version once https://github.com/falconry/falcon/pull/1945
-# appears in a release (NOTE: it's not in 3.1.3).
+# TODO 替换为 PyPI 发布的版本，一旦 https://github.com/falconry/falcon/pull/1945
+# 出现在某个发布版本中（注意：3.1.3 版本中没有此更改）。
 Falcon @ git+https://github.com/falconry/falcon.git@cbca63dc7739720eab856f48b32f9e782438be7a
+# 指定 pytest 的版本以确保测试框架功能
 pytest==7.2.1
 
-# NOTE binary wheels of bsddb3 are not distributed - on Debian this may
-# require installing build-essentials, python3-dev and libdb-dev
-# NOTE keep in sync with wheel version in the Dockerfile
+# 注意：bsddb3 的二进制轮没有分发 - 在 Debian 上这可能需要安装 build-essentials、python3-dev 和 libdb-dev
+# 注意：与 Dockerfile 中的轮版本保持同步
 bsddb3==6.2.9
