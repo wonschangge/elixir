@@ -30,14 +30,14 @@ from urllib import parse
 import falcon
 import jinja2
 
-from .lib import validFamily
-from .query import Query, SymbolInstance
-from .filters import get_filters
-from .filters.utils import FilterContext
-from .autocomplete import AutocompleteResource
-from .api import ApiIdentGetterResource
-from .query import get_query
-from .web_utils import ProjectConverter, IdentConverter, validate_version, validate_project, validate_ident
+from elixir.lib import validFamily
+from elixir.query import Query, SymbolInstance
+from elixir.filters import get_filters
+from elixir.filters.utils import FilterContext
+from elixir.autocomplete import AutocompleteResource
+from elixir.api import ApiIdentGetterResource
+from elixir.query import get_query
+from elixir.web_utils import ProjectConverter, IdentConverter, validate_version, validate_project, validate_ident
 
 VERSION_CACHE_DURATION_SECONDS = 2 * 60  # 2 minutes
 ADD_ISSUE_LINK = "https://github.com/bootlin/elixir/issues/new"

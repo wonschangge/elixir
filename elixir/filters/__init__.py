@@ -1,7 +1,7 @@
 from typing import List
 
-from .utils import Filter, FilterContext
-from .projects import project_filters, default_filters
+from elixir.filters.utils import Filter, FilterContext
+from elixir.filters.projects import project_filters, default_filters
 
 # Returns a list of applicable filters for project_name under provided filter context
 def get_filters(ctx: FilterContext, project_name: str) -> List[Filter]:

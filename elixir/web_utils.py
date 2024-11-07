@@ -2,7 +2,7 @@ import re
 from urllib import parse
 import falcon
 
-from .lib import validFamily
+from elixir.lib import validFamily
 
 def validate_project(project):
     if project is not None and re.match(r'^[a-zA-Z0-9_.,:/-]+$', project):

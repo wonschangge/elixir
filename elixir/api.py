@@ -24,9 +24,9 @@ import falcon
 from urllib import parse
 import sys
 
-from .query import get_query
-from .lib import validFamily
-from .web_utils import validate_version
+from elixir.query import get_query
+from elixir.lib import validFamily
+from elixir.web_utils import validate_version
 
 class ApiIdentGetterResource:
     def on_get(self, req, resp, project, ident):

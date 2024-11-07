@@ -24,9 +24,9 @@ from urllib import parse
 from bsddb3.db import DB_SET_RANGE
 import falcon
 
-from .lib import autoBytes, validFamily
-from .query import get_query
-from .web_utils import validate_project, validate_ident
+from elixir.lib import autoBytes, validFamily
+from elixir.query import get_query
+from elixir.web_utils import validate_project, validate_ident
 
 class AutocompleteResource:
     def on_get(self, req, resp):
