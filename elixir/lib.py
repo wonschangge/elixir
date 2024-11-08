@@ -264,7 +264,7 @@ def currentProject():
     return os.path.basename(os.path.dirname(getDataDir()))
 
 # 列出 Elixir 支持的所有家族
-families = ['A', 'B', 'C', 'D', 'K', 'M']
+families = ['A', 'B', 'C', 'D', 'K', 'M', 'TS']
 
 # 检查给定的家族是否有效
 def validFamily(family):
@@ -292,6 +292,8 @@ def getFileFamily(filename):
     elif name.lower()[:8] in ['makefile'] and not ext.lower() in ['.rst']:
         # 返回 'M' 家族
         return 'M' # Makefiles
+    elif name.lower() in ['.ts']:
+        return 'TS'
     else :
         # 不属于任何已知家族，返回 None
         return None
@@ -303,7 +305,8 @@ compatibility_list = {
     'C': ['C', 'K'],  # C 文件家族兼容 C 和 K 家族
     'K': ['K'],       # K 家族只兼容 K 家族
     'D': ['D', 'CM'], # D 文件家族兼容 D 和 CM 宏家族
-    'M': ['K']        # M 家族兼容 K 家族
+    'M': ['K'],       # M 家族兼容 K 家族
+    'TS': ['TS'],       # M 家族兼容 K 家族
 }
 
 # 检查家族是否兼容

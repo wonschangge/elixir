@@ -39,6 +39,8 @@ cd "$cur_dir"
 # 初始化 DT 绑定兼容字符串支持，默认禁用
 dts_comp_support=0 # DT bindings compatible strings support (disable by default)
 
+. $script_dir/myadd.sh
+
 # 版本目录处理函数
 version_dir()
 {
@@ -230,6 +232,9 @@ parse_defs()
     "D")
         parse_defs_D
         ;;
+    *)
+        parse_dCefs_All $cmd $opt1 $opt2 $opt3
+        ;;
     esac
 }
 
@@ -343,9 +348,9 @@ cmd=$1
 # 获取第二个参数作为选项1
 opt1=$2
 # 获取第三个参数作为选项2
-opt3=$3
+opt2=$3
 # 获取第四个参数作为选项3
-opt4=$4
+opt3=$4
 # 移除已处理的参数
 shift
 
@@ -419,6 +424,10 @@ case $cmd in
         # 显示帮助信息
         echo "Usage: $0 subcommand [args]..."
         exit 1
+        ;;
+    test)
+        opt3="TS"
+        parse_defs
         ;;
     *)
         # 处理未知命令
