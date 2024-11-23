@@ -37,7 +37,7 @@ script_dir=`pwd`
 # 切换回原来的目录
 cd "$cur_dir"
 # 初始化 DT 绑定兼容字符串支持，默认禁用
-dts_comp_support=0 # DT bindings compatible strings support (disable by default)
+dts_comp_support=0
 
 . $script_dir/myadd.sh
 
@@ -248,8 +248,8 @@ parse_defs_C()
     # 将 Git Blob 内容写入临时文件
     git cat-file blob "$opt1" > "$full_path"
 
-    # 使用 ctags-universal 解析大部分定义
-    ctags-universal -x --kinds-c=+p+x --extras='-{anonymous}' "$full_path" |
+    # 使用自编的v6.1.0 ctags 解析大部分定义
+    ctags -x --kinds-c=+p+x --extras='-{anonymous}' "$full_path" |
     # 过滤掉 operator 和 CONFIG_ 开头的行
     grep -avE "^operator |CONFIG_" |
     # 使用 awk 格式化输出
@@ -274,8 +274,8 @@ parse_defs_K()
     full_path=$tmp/$opt2
     # 将 Git Blob 内容写入临时文件
     git cat-file blob "$opt1" > "$full_path"
-    # 使用 ctags-universal 解析 Kconfig 定义
-    ctags-universal -x --language-force=kconfig --kinds-kconfig=c --extras-kconfig=-{configPrefixed} "$full_path" |
+    # 使用自编的v6.1.0 ctags 解析 Kconfig 定义
+    ctags -x --language-force=kconfig --kinds-kconfig=c --extras-kconfig=-{configPrefixed} "$full_path" |
     # 使用 awk 格式化输出
     awk '{print "CONFIG_"$1" "$2" "$3}'
     # 删除临时文件
@@ -293,8 +293,8 @@ parse_defs_D()
     full_path=$tmp/$opt2
     # 将 Git Blob 内容写入临时文件
     git cat-file blob "$opt1" > "$full_path"
-    # 使用 ctags-universal 解析 DTS 定义
-    ctags-universal -x --language-force=dts "$full_path" |
+    # 使用自编的v6.1.0 ctags 解析 DTS 定义
+    ctags -x --language-force=dts "$full_path" |
     # 使用 awk 格式化输出
     awk '{print $1" "$2" "$3}'
     # 删除临时文件

@@ -38,7 +38,8 @@ class SymbolInstance(object):
         if self.type:  # 如果类型存在
             type_repr = f" , type: {self.type}"  # 添加类型到字符串表示中
 
-        return f"Symbol in path: {self.path}, line: {self.line}" + type_repr  # 返回符号的详细信息
+        # 返回符号的详细信息
+        return f"Symbol in path: {self.path}, line: {self.line}" + type_repr
 
     def __str__(self):  # 返回对象的字符串表示
         return self.__repr__()  # 调用 __repr__ 方法

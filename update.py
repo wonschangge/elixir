@@ -31,24 +31,36 @@ import elixir.data as data  # 导入数据处理模块
 from elixir.data import PathList  # 导入路径列表类
 from find_compatible_dts import FindCompatibleDTS  # 导入查找兼容 DTS 的类
 
-verbose = False  # 控制是否输出详细信息
+# 控制是否输出详细信息
+verbose = False
 
-dts_comp_support = int(script('dts-comp'))  # 获取 DTS 兼容支持级别
+# 获取 DTS 兼容支持级别
+dts_comp_support = int(script('dts-comp')) 
 
-compatibles_parser = FindCompatibleDTS()  # 创建查找兼容 DTS 的解析器
+# 创建查找兼容 DTS 的解析器
+compatibles_parser = FindCompatibleDTS() 
 
-db = data.DB(lib.getDataDir(), readonly=False, shared=True, dtscomp=dts_comp_support)  # 初始化数据库
+# 初始化数据库
+db = data.DB(lib.getDataDir(), readonly=False, shared=True, dtscomp=dts_comp_support)
 
 # CPU 线程数（+2 用于版本索引）
 cpu = 10
-threads_list = []  # 存储线程列表
 
-hash_file_lock = Lock()  # 用于 db.hash 和 db.file 的锁
-blobs_lock = Lock()  # 用于 db.blobs 的锁
-defs_lock = Lock()  # 用于 db.defs 的锁
-refs_lock = Lock()  # 用于 db.refs 的锁
-docs_lock = Lock()  # 用于 db.docs 的锁
-comps_lock = Lock()  # 用于 db.comps 的锁
+# 存储线程列表
+threads_list = []
+
+# 用于 db.hash 和 db.file 的锁
+hash_file_lock = Lock()
+# 用于 db.blobs 的锁
+blobs_lock = Lock()
+# 用于 db.defs 的锁
+defs_lock = Lock()  
+# 用于 db.refs 的锁
+refs_lock = Lock()  
+# 用于 db.docs 的锁
+docs_lock = Lock()  
+# 用于 db.comps 的锁
+comps_lock = Lock()
 comps_docs_lock = Lock()  # 用于 db.comps_docs 的锁
 tag_ready = Condition()  # 等待新标签的条件变量
 
@@ -73,61 +85,84 @@ tags_comps_docs_lock = Lock()
 
 class UpdateIds(Thread):
     def __init__(self, tag_buf):
-        Thread.__init__(self, name="UpdateIdsElixir")  # 初始化线程
-        self.tag_buf = tag_buf  # 存储标签缓冲区
+        # 初始化线程
+        Thread.__init__(self, name="UpdateIdsElixir") 
+        # 存储标签缓冲区
+        self.tag_buf = tag_buf
 
     def run(self):
-        global new_idxes, tags_done, tag_ready  # 声明全局变量
-        self.index = 0  # 初始化索引
+        # 声明全局变量
+        global new_idxes, tags_done, tag_ready
+        # 初始化索引
+        self.index = 0
 
         for tag in self.tag_buf:
-            new_idxes.append((self.update_blob_ids(tag), Event(), Event(), Event(), Event()))  # 更新 blob ids 并添加到 new_idxes
+            # 更新 blob ids 并添加到 new_idxes
+            new_idxes.append((self.update_blob_ids(tag), Event(), Event(), Event(), Event()))
 
+            # 输出进度信息
             progress('ids: ' + tag.decode() + ': ' + str(len(new_idxes[self.index][0])) +
-                     ' new blobs', self.index + 1)  # 输出进度信息
+                     ' new blobs', self.index + 1)
 
-            new_idxes[self.index][1].set()  # 标记标签已准备好
+            # 标记标签已准备好
+            new_idxes[self.index][1].set()
 
-            self.index += 1  # 增加索引
+            # 增加索引
+            self.index += 1
 
             # 唤醒等待的线程
             with tag_ready:
                 tag_ready.notify_all()
 
-        tags_done = True  # 标记所有标签已处理完毕
-        progress('ids: Thread finished', self.index)  # 输出线程完成信息
+        # 标记所有标签已处理完毕
+        tags_done = True
+        # 输出线程完成信息
+        progress('ids: Thread finished', self.index)
 
     def update_blob_ids(self, tag):
 
-        global hash_file_lock, blobs_lock  # 声明全局变量
+        # 声明全局变量
+        global hash_file_lock, blobs_lock
 
         if db.vars.exists('numBlobs'):
-            idx = db.vars.get('numBlobs')  # 获取当前 blob 数量
+            # 获取当前 blob 数量
+            idx = db.vars.get('numBlobs') 
         else:
-            idx = 0  # 如果不存在则初始化为 0
+            # 如果不存在则初始化为 0
+            idx = 0
 
         # 获取 blob 哈希值和关联的文件名（不带路径）
         blobs = scriptLines('list-blobs', '-f', tag)
 
         new_idxes = []
         for blob in blobs:
-            hash, filename = blob.split(b' ', maxsplit=1)  # 分割哈希值和文件名
+            # 分割哈希值和文件名
+            hash, filename = blob.split(b' ', maxsplit=1)
             with blobs_lock:
-                blob_exist = db.blob.exists(hash)  # 检查 blob 是否已存在
+                # 检查在 blob 中该条是否已存在
+                blob_exist = db.blob.exists(hash)
                 if not blob_exist:
-                    db.blob.put(hash, idx)  # 如果不存在则添加
+                    # 如果不存在则添加
+                    db.blob.put(hash, idx)
 
             if not blob_exist:
                 with hash_file_lock:
-                    db.hash.put(idx, hash)  # 添加哈希值
-                    db.file.put(idx, filename)  # 添加文件名
+                    # 添加哈希值
+                    db.hash.put(idx, hash)
+                    # 添加文件名
+                    db.file.put(idx, filename)
 
-                new_idxes.append(idx)  # 添加新的 idx
+                # 添加新的 idx
+                new_idxes.append(idx)
                 if verbose:
-                    print(f"New blob #{idx} {hash}:{filename}")  # 输出详细信息
-                idx += 1  # 增加 idx
-        db.vars.put('numBlobs', idx)  # 更新 blob 数量
-        return new_idxes  # 返回新的 idxes
+                    # 输出详细信息
+                    print(f"New blob #{idx} {hash}:{filename}")
+                # 增加 idx
+                idx += 1
+        # 更新 blob 数量
+        db.vars.put('numBlobs', idx)
+        # 返回新的 idxes
+        return new_idxes
 
 
 class UpdateVersions(Thread):
@@ -677,7 +712,7 @@ def progress(msg, current):
     print('{} - {} ({:.1%})'.format(project, msg, current/num_tags))
 
 
-# 主程序
+############################################# 主程序
 
 # 检查线程数参数
 if len(argv) >= 2 and argv[1].isdigit() :
@@ -713,6 +748,11 @@ quo, rem = divmod(rem, 2)
 num_th_defs += quo
 num_th_refs += quo + rem
 
+# :::Chanj Wons:::Only for test
+# num_th_refs = 1
+# num_th_defs = 1
+# num_th_docs = 1
+
 # 获取新标签列表
 tag_buf = []
 for tag in scriptLines('list-tags'):
@@ -730,26 +770,33 @@ print(project + ' - found ' + str(num_tags) + ' new tags')
 if not num_tags:
     exit(0)
 
-# 添加更新ID和版本的线程
+# 定义ID线程[0]
 threads_list.append(UpdateIds(tag_buf))
+# 定义版本线程[1]
 threads_list.append(UpdateVersions(tag_buf))
-
-# 定义定义线程
+# 定义定义线程[2,1-n]
 for i in range(num_th_defs):
     threads_list.append(UpdateDefs(i, num_th_defs))
-# 定义引用线程
+# 定义引用线程[2,1-n]
 for i in range(num_th_refs):
     threads_list.append(UpdateRefs(i, num_th_refs))
-# 定义文档线程
+# 定义文档线程[2,1-n]
 for i in range(num_th_docs):
     threads_list.append(UpdateDocs(i, num_th_docs))
-# 定义兼容性线程
+# 定义兼容性线程[2,1-n]
 for i in range(num_th_comps):
     threads_list.append(UpdateComps(i, num_th_comps))
-# 定义兼容性文档线程
+# 定义兼容性文档线程[2,1-n]
 for i in range(num_th_comps_docs):
     threads_list.append(UpdateCompsDocs(i, num_th_comps_docs))
 
+# # :::Chanj Wons:::Only for test
+# # 定义定义线程[2]
+# threads_list.append(UpdateDefs(1, 1))
+# # 定义引用线程[3]
+# threads_list.append(UpdateRefs(1, 1))
+# # 定义文档线程[4]
+# threads_list.append(UpdateDocs(1, 1))
 
 # 开始处理标签
 threads_list[0].start()
@@ -757,6 +804,12 @@ threads_list[0].start()
 # 等待第一个标签准备就绪
 with tag_ready:
     tag_ready.wait()
+
+# # :::Chanj Wons:::Only for test
+# threads_list[1].start()
+# threads_list[2].start()
+# threads_list[3].start()
+# threads_list[4].start()
 
 # 启动剩余的线程
 for i in range(1, len(threads_list)):
