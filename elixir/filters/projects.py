@@ -40,6 +40,8 @@ from .makefilesrctree import MakefileSrcTreeFilter
 # 从 makefilesubdir 模块再次导入 MakefileSubdirFilter 类
 from .makefilesubdir import MakefileSubdirFilter
 
+# 从 ts 模块导入 TsFilter 类
+# from .ts import TsFilter
 
 # 定义默认过滤器列表，应用于所有项目
 default_filters = [
@@ -126,7 +128,6 @@ project_filters = {
         CppPathIncFilter,           # 添加 C++ 路径包含文件过滤器
     ],
     'vite': [
-
+        IdentFilter
     ],
 }
-

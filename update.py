@@ -32,7 +32,7 @@ from elixir.data import PathList  # 导入路径列表类
 from find_compatible_dts import FindCompatibleDTS  # 导入查找兼容 DTS 的类
 
 # 控制是否输出详细信息
-verbose = False
+verbose = True
 
 # 获取 DTS 兼容支持级别
 dts_comp_support = int(script('dts-comp')) 
@@ -236,8 +236,10 @@ class UpdateDefs(Thread):
         # 定义全局变量
         global new_idxes, tags_done, tag_ready, tags_defs, tags_defs_lock
 
+        # print(f"UpdateDefs 1, tags_done: {tags_done}, index: {self.index}, equal: {len(new_idxes)}")
         # 当标签处理未完成且当前索引小于新索引列表长度时循环执行
         while not (tags_done and self.index >= len(new_idxes)):
+            # print(f"UpdateDefs 2")
             # 如果当前索引超出新索引列表长度
             if self.index >= len(new_idxes):
                 # 等待新的标签
@@ -254,6 +256,7 @@ class UpdateDefs(Thread):
                 tags_defs[0] += 1
 
             # 更新定义
+            # print(f"UpdateDefs 3")
             self.update_definitions(new_idxes[self.index][0])
 
             # 告知UpdateDefs已处理该标签
@@ -264,6 +267,7 @@ class UpdateDefs(Thread):
 
         # 获取锁并更新已完成的线程数量
         with tags_defs_lock:
+            # print(f"UpdateDefs 4")
             tags_defs[1] += 1
             # 打印进度信息
             progress('defs: Thread ' + str(tags_defs[1]) + '/' + str(self.inc) + ' finished', tags_defs[0])
@@ -309,7 +313,7 @@ class UpdateDefs(Thread):
                     if db.defs.exists(ident):
                         obj = db.defs.get(ident)
                     # 检查标识符是否为有效标识符
-                    elif lib.isIdent(ident):
+                    elif lib.isIdent(ident, family):
                         obj = data.DefList()
                     else:
                         continue
@@ -792,7 +796,7 @@ for i in range(num_th_comps_docs):
 
 # # :::Chanj Wons:::Only for test
 # # 定义定义线程[2]
-# threads_list.append(UpdateDefs(1, 1))
+# threads_list.append(UpdateDefs(0, 1))
 # # 定义引用线程[3]
 # threads_list.append(UpdateRefs(1, 1))
 # # 定义文档线程[4]

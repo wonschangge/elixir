@@ -1,16 +1,16 @@
 # Elixir definitions for communication_dsoftbus
 
-version_dir()
-{
-    grep "^OpenHarmony" |
-    sed -re 's/^OpenHarmony-/v/'
-}
+    # version_dir()
+    # {
+    #     grep "^OpenHarmony" |
+    #     sed -re 's/^OpenHarmony-/v/'
+    # }
 
-version_rev()
-{
-    grep "^v" |
-    sed -re 's/^v/OpenHarmony-/'
-}
+    # version_rev()
+    # {
+    #     grep "^v" |
+    #     sed -re 's/^v/OpenHarmony-/'
+    # }
 
 # get_tags()
 # {

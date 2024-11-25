@@ -76,14 +76,22 @@ class Query:
             "LXR_DATA_DIR": self.data_dir,  # 添加数据目录环境变量
         }
 
-    def close(self):  # 关闭数据库连接
-        self.db.close()  # 调用数据库连接的 close 方法
+    def close(self):
+        self.db.close()
 
-            # 处理不同的命令以从数据库中检索信息
-        if cmd == 'history':
-            # 解码行并按空格分割，获取标签信息
-            taginfo = decode(line).split(' ')
-            # 计算标签信息的数量
+    def query(self, cmd, *args):
+        if cmd == 'versions':
+
+            # Returns the list of indexed versions in the following format:
+            # topmenu submenu tag
+            # Example: v3 v3.1 v3.1-rc10
+            versions = OrderedDict()
+
+            for line in self.scriptLines('list-tags', '-h'):
+                taginfo = decode(line).split(' ')
+            num = len(taginfo)
+            num = len(taginfo)
+            # 初始化顶级菜单和子菜单
             num = len(taginfo)
             # 初始化顶级菜单和子菜单
             topmenu, submenu = 'FIXME', 'FIXME'
@@ -92,31 +100,31 @@ class Query:
             if num == 1:
                 tag, = taginfo
             elif num == 2:
-                submenu, tag = taginfo
-            elif num == 3:
-                topmenu, submenu, tag = taginfo
+                submenu,tag = taginfo
+            elif num ==3:
+                topmenu,submenu,tag = taginfo
 
-            # 检查标签是否存在于版本数据库中
             if self.db.vers.exists(tag):
                 # 如果顶级菜单不在版本字典中，初始化一个有序字典
-                if topmenu not in versions:
-                    versions[topmenu] = OrderedDict()
-                # 如果子菜单不在顶级菜单的字典中，初始化一个列表
-                if submenu not in versions[topmenu]:
-                    versions[topmenu][submenu] = []
-                # 将标签添加到子菜单的列表中
-                versions[topmenu][submenu].append(tag)
+                if self.db.vers.exists(tag):
+                # 如果顶级菜单不在版本字典中，初始化一个有序字典
+                    if topmenu not in versions:
+                        versions[topmenu] = OrderedDict()
+                    if submenu not in versions[topmenu]:
+                        versions[topmenu][submenu] = []
+                    versions[topmenu][submenu].append(tag)
 
             # 返回版本信息
             return versions
 
         elif cmd == 'latest':
-            # 返回被认为是最新版本的标签
+
+            # Returns the tag considered as the latest one
             previous = None
             tag = ''
             index = 0
 
-            # 如果我们两次获得相同的标签，表示已经到达最旧的一个
+            # If we get the same tag twice, we are at the oldest one
             while not self.db.vers.exists(tag) and previous != tag:
                 previous = tag
                 # 获取最新的标签
@@ -127,14 +135,23 @@ class Query:
             return tag
 
         elif cmd == 'type':
-            # 返回给定路径的类型（blob 或 tree）
+
+            # Returns the type (blob or tree) associated to
+            # the given path. Example:
+            # > ./query.py type v3.1-rc10 /Makefile
+            # blob
+            # > ./query.py type v3.1-rc10 /arch
+            # tree
+
             version = args[0]
             path = args[1]
             # 调用脚本获取类型并去除首尾空白
             return decode(self.script('get-type', version, path)).strip()
 
         elif cmd == 'exist':
-            # 返回请求的文件是否存在，否则返回 False
+
+            # Returns True if the requested file exists, otherwise returns False
+
             version = args[0]
             path = args[1]
 
@@ -156,15 +173,21 @@ class Query:
             return False
 
         elif cmd == 'dir':
-            # 返回指定目录的内容（树或 blob）
+
+            # Returns the contents (trees or blobs) of the specified directory
+            # Example: ./query.py dir v3.1-rc10 /arch
+
             version = args[0]
             path = args[1]
-            # 获取目录内容并去除最后一个空行
-            entries_str = decode(self.script('get-dir', version, path))
+            entries_str =  decode(self.script('get-dir', version, path))
             return entries_str.split("\n")[:-1]
 
         elif cmd == 'file':
-            # 返回指定文件的内容，并标记令牌以便进一步处理
+
+            # Returns the contents of the specified file
+            # Tokens are marked for further processing
+            # Example: ./query.py file v3.1-rc10 /Makefile
+
             version = args[0]
             path = args[1]
 
@@ -173,9 +196,7 @@ class Query:
             # 获取文件家族
             family = lib.getFileFamily(filename)
 
-            # 如果文件有家族信息
-            if family is not None:
-                # 创建字节缓冲区
+            if family != None:
                 buffer = BytesIO()
                 # 获取文件令牌
                 tokens = self.scriptLines('tokenize-file', version, path, family)
@@ -206,17 +227,20 @@ class Query:
                 return decode(self.script('get-file', version, path))
 
         elif cmd == 'family':
-            # 获取给定文件的家族
+            # Get the family of a given file
+
             filename = args[0]
 
             return lib.getFileFamily(filename)
 
         elif cmd == 'dts-comp':
-            # 获取 dts_comp_support 的状态
+            # Get state of dts_comp_support
+
             return self.dts_comp_support
 
         elif cmd == 'dts-comp-exists':
-            # 检查 dts 兼容字符串是否存在
+            # Check if a dts compatible string exists
+
             ident = args[0]
             if self.dts_comp_support:
                 return self.db.comps.exists(ident)
@@ -224,8 +248,9 @@ class Query:
                 return False
 
         elif cmd == 'keys':
-            # 返回给定数据库的所有键
-            # 注意：这可能需要一段时间
+            # Return all keys of a given database
+            # /!\ This can take a while /!\
+
             name = args[0]
 
             if name == 'vars':
@@ -252,12 +277,12 @@ class Query:
                 return []
 
         elif cmd == 'ident':
-            # 返回标识符搜索结果
+            # Returns identifier search results
             version = args[0]
             ident = args[1]
             family = args[2]
 
-            # DT 绑定兼容字符串的处理方式不同
+            # DT bindings compatible strings are handled differently
             if family == 'B':
                 return self.get_idents_comps(version, ident)
             else:

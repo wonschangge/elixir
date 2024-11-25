@@ -47,7 +47,11 @@ defTypeR = {
     't': 'typedef',
     'u': 'union',
     'v': 'variable',
-    'x': 'externvar'}
+    'x': 'externvar',
+    'C': 'constant',
+    'G': 'generator',
+    'a': 'alias',
+}
 
 # 反向类型映射表，将完整的类型名称映射回单个字符
 defTypeD = {v: k for k, v in defTypeR.items()}

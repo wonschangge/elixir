@@ -201,12 +201,92 @@ blacklist = (
     b'x'
 )
 
+blacklist_ts = (
+    b'import',
+    b'export',
+    b'from',
+    b'type',
+    b'boolean',
+    b'string',
+    b'return',
+    b'const',
+    b'let',
+    b'interface',
+    b'class',
+    b'extends',
+    b'implements',
+    b'public',
+    b'private',
+    b'protected',
+    b'static',
+    b'abstract',
+    b'async',
+    b'await',
+    b'new',
+    b'super',
+    b'any',
+    b'unknown',
+    b'never',
+    b'void',
+    b'null',
+    b'undefined',
+    b'number',
+    b'bigint',
+    b'symbol',
+    b'object',
+    b'keyof',
+    b'unique',
+    b'infer',
+    b'is',
+    b'asserts',
+    b'module',
+    b'namespace',
+    b'enum',
+    b'as',
+    b'of',
+    b'assert',
+    b'yield',
+    b'break',
+    b'case',
+    b'catch',
+    b'continue',
+    b'default',
+    b'delete',
+    b'do',
+    b'else',
+    b'finally',
+    b'for',
+    b'function',
+    b'if',
+    b'in',
+    b'instanceof',
+    b'new',
+    b'return',
+    b'throw',
+    b'try',
+    b'var',
+    b'while',
+    b'with',
+    b'package',
+    b'protected',
+    b'internal',
+    b'declare',
+    b'global',
+    b'typeof',
+)
+
 # 判断一个字节字符串是否为有效的标识符
 # 参数:
 #   bstr: 需要判断的字节字符串
 # 返回:
 #   如果是有效标识符返回 True，否则返回 False
-def isIdent(bstr):
+def isIdent(bstr, family):
+    # 添加拦截以处理TS
+    if family == 'TS':
+        if bstr in blacklist_ts:
+            return False
+        return True
+
     # 检查长度是否小于 2 或在黑名单中或以 ~ 开头
     if (len(bstr) < 2 or
         bstr in blacklist or
@@ -284,6 +364,8 @@ def getFileFamily(filename):
     elif ext.lower() in ['.dts', '.dtsi'] :
         # 返回 'D' 家族
         return 'D' # Devicetree files
+    elif ext.lower() in ['.ts']:
+        return 'TS'
     # 检查文件名前 7 个字符是否为 'kconfig' 且扩展名不是 '.rst'
     elif name.lower()[:7] in ['kconfig'] and not ext.lower() in ['.rst']:
         # 返回 'K' 家族
@@ -292,8 +374,6 @@ def getFileFamily(filename):
     elif name.lower()[:8] in ['makefile'] and not ext.lower() in ['.rst']:
         # 返回 'M' 家族
         return 'M' # Makefiles
-    elif name.lower() in ['.ts']:
-        return 'TS'
     else :
         # 不属于任何已知家族，返回 None
         return None

@@ -39,8 +39,6 @@ cd "$cur_dir"
 # 初始化 DT 绑定兼容字符串支持，默认禁用
 dts_comp_support=0
 
-. $script_dir/myadd.sh
-
 # 版本目录处理函数
 version_dir()
 {
@@ -232,9 +230,6 @@ parse_defs()
     "D")
         parse_defs_D
         ;;
-    *)
-        parse_dCefs_All $cmd $opt1 $opt2 $opt3
-        ;;
     esac
 }
 
@@ -249,7 +244,26 @@ parse_defs_C()
     git cat-file blob "$opt1" > "$full_path"
 
     # 使用自编的v6.1.0 ctags 解析大部分定义
-    ctags -x --kinds-c=+p+x --extras='-{anonymous}' "$full_path" |
+# ctags --list-kinds-full=c
+# #LETTER NAME       ENABLED REFONLY NROLES MASTER DESCRIPTION
+# D       macroparam no      no      0      C      parameters inside macro definitions
+# L       label      no      no      0      C      goto labels
+# d       macro      yes     no      2      C      macro definitions
+# e       enumerator yes     no      0      C      enumerators (values inside an enumeration)
+# f       function   yes     no      1      C      function definitions
+# g       enum       yes     no      0      C      enumeration names
+# h       header     yes     yes     2      C      included header files
+# l       local      no      no      0      C      local variables
+# m       member     yes     no      0      C      struct, and union members
+# p       prototype  no      no      0      C      function prototypes
+# s       struct     yes     no      1      C      structure names
+# t       typedef    yes     no      0      C      typedefs
+# u       union      yes     no      0      C      union names
+# v       variable   yes     no      0      C      variable definitions
+# x       externvar  no      no      0      C      external and forward variable declarations
+# z       parameter  no      no      0      C      function parameters inside function or prototype definitions
+# 仅需打开上面的未启用项即可
+    ctags -x --kinds-c=+pxDLlz --extras='-{anonymous}' "$full_path" |
     # 过滤掉 operator 和 CONFIG_ 开头的行
     grep -avE "^operator |CONFIG_" |
     # 使用 awk 格式化输出
