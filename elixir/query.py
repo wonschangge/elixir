@@ -395,7 +395,9 @@ class Query:
 
         files_this_version = self.db.vers.get(version).iter()  # 获取当前版本的所有文件迭代器
         this_ident = self.db.defs.get(ident)  # 获取标识符的定义信息
+        print("this_ident ", this_ident)
         defs_this_ident = this_ident.iter(dummy=True)  # 获取标识符的定义迭代器
+        print("defs_this_ident ", defs_this_ident)
         macros_this_ident = this_ident.get_macros()  # 获取标识符的宏信息
 
         if self.db.refs.exists(ident):
@@ -411,6 +413,7 @@ class Query:
         # 版本、定义、引用和文档注释都按索引顺序填充
         # 因此可以按顺序遍历每个文件的定义、引用和文档注释
         def_idx, def_type, def_line, def_family = next(defs_this_ident)  # 获取第一个定义的信息
+        print('def_idx:', def_idx, 'def_type:', def_type, 'def_line:', def_line, 'def_family:', def_family)
         ref_idx, ref_lines, ref_family = next(refs)  # 获取第一个引用的信息
         doc_idx, doc_line, doc_family = next(docs)  # 获取第一个文档注释的信息
 
@@ -431,6 +434,7 @@ class Query:
 
             # 将当前标识符的信息复制到dBuf、rBuf和docBuf
             while def_idx == file_idx:
+                print(def_family, family, lib.compatibleMacro(macros_this_ident, family))
                 if (def_family == family or family == 'A'
                     or lib.compatibleMacro(macros_this_ident, family)):
                     dBuf.append((file_path, def_type, def_line))  # 将符合条件的定义信息添加到缓冲区

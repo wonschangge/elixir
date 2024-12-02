@@ -311,18 +311,21 @@ class UpdateDefs(Thread):
 
                     # 检查标识符是否已存在于数据库中
                     if db.defs.exists(ident):
+                        print("update_definitions 1")
                         obj = db.defs.get(ident)
                     # 检查标识符是否为有效标识符
                     elif lib.isIdent(ident, family):
+                        print("update_definitions 2")
                         obj = data.DefList()
                     else:
+                        print("update_definitions 3")
                         continue
 
                     # 添加定义信息
                     obj.append(idx, type, line, family)
                     # 如果开启详细模式，打印定义信息
                     if verbose:
-                        print(f"def {type} {ident} in #{idx} @ {line}")
+                        print(f"{family} def {type} {ident} in #{idx} @ {line}")
                     # 将定义信息存入数据库
                     db.defs.put(ident, obj)
 

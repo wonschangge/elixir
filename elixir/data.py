@@ -26,7 +26,9 @@ import os.path  # 导入os.path模块，用于路径操作
 import errno  # 导入errno模块，用于错误号定义
 
 # 定义正则表达式，用于解析定义列表中的元素
-deflist_regex = re.compile(b'(\d*)(\w)(\d*)(\w),?')
+# 支持诸如 TSC 这种多字母的 type
+# 支持诸如 TS 这种多字母的 family
+deflist_regex = re.compile(b'(\d*)([a-zA-Z]+)(\d*)([a-zA-Z]*),?')
 # 定义正则表达式，用于查找宏定义
 deflist_macro_regex = re.compile('\dM\d+(\w)')
 
@@ -48,9 +50,21 @@ defTypeR = {
     'u': 'union',
     'v': 'variable',
     'x': 'externvar',
-    'C': 'constant',
-    'G': 'generator',
-    'a': 'alias',
+    # TS
+    'TSC': 'constant',
+    'TSG': 'generator',
+    'TSa': 'alias',
+    'TSc': 'class',
+    'TSe': 'enumerator',
+    'TSf': 'function',
+    'TSg': 'enum',
+    'TSi': 'method',
+    'TSl': 'interface',
+    'TSm': 'local',
+    'TSn': 'namespace',
+    'TSp': 'property',
+    'TSv': 'variable',
+    'TSz': 'parameter',
 }
 
 # 反向类型映射表，将完整的类型名称映射回单个字符
@@ -71,13 +85,16 @@ class DefList:
     def iter(self, dummy=False):
         # 获取所有元素并排序
         entries = deflist_regex.findall(self.data)
+        print(entries)
         entries.sort(key=lambda x:int(x[0]))
+        print(entries)
         # 遍历并生成元组 (id, type, line, family)
         for id, type, line, family in entries:
             id = int(id)
             type = defTypeR [type.decode()]
             line = int(line)
             family = family.decode()
+            print(id, type, line, family)
             yield id, type, line, family
         if dummy:
             # 如果dummy为True，生成一个虚拟的元组
