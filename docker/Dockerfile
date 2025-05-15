@@ -1,6 +1,7 @@
 FROM debian:bookworm AS build
 
 RUN \
+  sed -i 's@deb.debian.org@mirrors.aliyun.com@g' /etc/apt/sources.list.d/debian.sources && \
   apt-get update && \
   apt-get --no-install-recommends -y install \
     python3 \
@@ -18,6 +19,7 @@ RUN pip wheel bsddb3==6.2.9
 FROM debian:bookworm
 
 RUN \
+  sed -i 's@deb.debian.org@mirrors.aliyun.com@g' /etc/apt/sources.list.d/debian.sources && \
   apt-get update && \
   apt-get --no-install-recommends -y install \
     python3 \

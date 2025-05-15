@@ -452,6 +452,7 @@ Here we mount a host directory as Elixir data:
 
     # mkdir ./elixir-data
     # docker run -v ./elixir-data/:/srv/elixir-data -d --name elixir-container elixir
+    # docker run -p 8080:80 -v ./elixir-data/:/srv/elixir-data -d --name elixir-container elixir
 
 The Docker image does not contain any repositories.
 To index a repository, you can use the `index-repository` script.
