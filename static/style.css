@@ -801,6 +801,18 @@ h2 {
 .lxrcode {
   position: relative;
 }
+
+.source-image {
+  box-sizing: border-box;
+  padding: 1.5em;
+  text-align: center;
+}
+
+.source-image img {
+  max-width: 100%;
+  height: auto;
+  vertical-align: middle;
+}
 .lxrcode pre {
   margin: 0;
   padding-top: 1em;

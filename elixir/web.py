@@ -481,21 +481,51 @@ def get_layout_template_context(q: Query, ctx: RequestContext, get_url_with_new_
         'current_family': 'A',
     }
 
+# Extensions rendered as an image instead of highlighted text.
+# Detection is by filename only. SVG is included because the source page
+# never inlines the markup: it references ?raw from <img>, and browsers do
+# not run scripts in SVG loaded that way. The raw response is image/svg+xml
+# with nosniff and a sandbox CSP so opening ?raw as a document cannot run
+# script in this origin either.
+IMAGE_MEDIA_TYPES = {
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp',
+    '.svg': 'image/svg+xml',
+}
+
+def image_media_type(path: str) -> str|None:
+    _root, ext = os.path.splitext(path)
+    return IMAGE_MEDIA_TYPES.get(ext.lower())
+
 # Generate raw source response
 def generate_raw_source(resp, query, project, version, path):
     type = query.get_file_type(version, path)
     if type != 'blob':
         raise ElixirProjectError('File not found', 'This file does not exist.',
                                  query=query, project=project, version=version)
+
+    filename = path.split('/')[-1]
+    # Cache for 24 hours
+    resp.cache_control = ('max-age=86400',)
+    # resp.headers is a copy, so set_header is required for this to be sent.
+    # For SVG this is what stops script when the raw URL is opened directly
+    # (Content-Disposition is inline so <img> can paint the bytes).
+    resp.set_header('Content-Security-Policy', "sandbox; default-src 'none'")
+
+    media_type = image_media_type(path)
+    if media_type is not None:
+        resp.content_type = media_type
+        resp.data = query.get_file_bytes(version, path)
+        resp.viewable_as = filename
+        resp.set_header('X-Content-Type-Options', 'nosniff')
     else:
         code = query.get_file_raw(version, path)
         resp.content_type = 'application/octet-stream'
         resp.text = code
-        resp.downloadable_as = path.split('/')[-1]
-        # Cache for 24 hours
-        resp.cache_control = ('max-age=86400',)
-        # Sandbox result just in case
-        resp.headers['Content-Security-Policy'] = "sandbox; default-src 'none'"
+        resp.downloadable_as = filename
 
 # Guesses file format based on filename, returns code formatted as HTML
 def format_code(filename: str, code: str) -> str:
@@ -642,10 +672,19 @@ def generate_source_page(ctx: RequestContext, q: Query,
         }
         template = ctx.jinja_env.get_template('tree.html')
     elif type == 'blob':
-        template_ctx = {
-            'code': generate_source(q, project, version, path),
-            'path': path,
-        }
+        if image_media_type(path) is not None:
+            filename = path.rsplit('/', 1)[-1]
+            # Relative ?raw keeps the current path, including any encoding.
+            template_ctx = {
+                'image_url': '?raw',
+                'image_alt': filename,
+                'path': path,
+            }
+        else:
+            template_ctx = {
+                'code': generate_source(q, project, version, path),
+                'path': path,
+            }
         template = ctx.jinja_env.get_template('source.html')
     else:
         raise ElixirProjectError('File not found', 'This file does not exist.',
