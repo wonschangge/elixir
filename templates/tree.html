@@ -20,25 +20,33 @@
         {% if back_url is not none %}
             <tr>
                 <td><a class="tree-icon icon-back" href="{{ back_url }}">Parent directory</a></td>
-                <td><a tabindex="-1" class="size" href="{{ back_url }}"></a></td>
+                <td class="col-meta"><a tabindex="-1" class="date" href="{{ back_url }}"></a></td>
+                <td class="col-meta"><a tabindex="-1" class="size" href="{{ back_url }}"></a></td>
             </tr>
         {% endif %}
-        {% for type, name, path, url, size in dir_entries %}
+        {% for entry in dir_entries %}
             <tr>
                 <td>
-                    <a class="tree-icon icon-{{- type if type != 'symlink' else 'blob' -}}"
-                       href="{{ url }}">
-                    {% if type == 'symlink' %}
-                        {{ name }} -> {{  path }}
+                    <a class="tree-icon icon-{{- entry.type if entry.type != 'symlink' else 'blob' -}}"
+                       href="{{ entry.url }}"{% if entry.date %} data-commit-date="{{ entry.date }}"{% endif %}>
+                    {% if entry.type == 'symlink' %}
+                        {{ entry.name }} -> {{ entry.path }}
                     {% else %}
-                        {{ name }}
+                        {{ entry.name }}
                     {% endif %}
                     </a>
                 </td>
-                <td>
-                    <a tabindex="-1" class="size" href="{{ url }}">
-                    {% if size is not none %}
-                        {{ size }} bytes
+                <td class="col-meta">
+                    <a tabindex="-1" class="date" href="{{ entry.url }}"{% if entry.date %} title="Last commit date"{% endif %}>
+                    {% if entry.date %}
+                        <time datetime="{{ entry.date }}">{{ entry.date }}</time>
+                    {% endif %}
+                    </a>
+                </td>
+                <td class="col-meta">
+                    <a tabindex="-1" class="size" href="{{ entry.url }}">
+                    {% if entry.size is not none %}
+                        {{ entry.size }} bytes
                     {% endif %}
                     </a>
                 </td>

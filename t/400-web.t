@@ -44,7 +44,18 @@ http_request_ok 'index query', $tenv, '/testproj/v5.4/source',
         qr{href="/testproj/v5.4/source/python"},
         qr{href="/testproj/v5.4/source/typescript"},
         qr{<option value="P"}, qr{Python},
-        qr{<option value="T"}, qr{TypeScript/JavaScript} ], 1;
+        qr{<option value="T"}, qr{TypeScript/JavaScript},
+        qr{href="/testproj/v5\.4/source/issue102\.c" data-commit-date="\d{4}-\d{2}-\d{2}"},
+        qr{href="/testproj/v5\.4/source/arch" data-commit-date="\d{4}-\d{2}-\d{2}"},
+        qr{<time datetime="\d{4}-\d{2}-\d{2}">\d{4}-\d{2}-\d{2}</time>},
+        { not => qr{Parent directory} } ], 1;
+
+http_request_ok 'subdirectory dates keep the parent row', $tenv,
+    '/testproj/v5.4/source/drivers/i2c',
+    [ qr{^Content-Type:\s*text/html},
+        qr{class="tree-icon icon-back"[^>]*>Parent directory},
+        qr{href="/testproj/v5\.4/source/drivers/i2c/i2c-core-acpi\.c" data-commit-date="\d{4}-\d{2}-\d{2}"},
+        qr{bytes} ], 1;
 
 http_request_ok 'identifier query', $tenv, '/testproj/v5.4/ident/gsb_buffer',
     [ qr{^Content-Type:\s*text/html}, qr{\bgsb_buffer\b},

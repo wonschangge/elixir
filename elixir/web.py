@@ -569,13 +569,14 @@ def generate_source(q: Query, project: str, version: str, path: str) -> str:
 
     return html_code_block
 
-# Represents a file entry in git tree
-# type : either tree (directory), blob (file) or symlink
-# name: filename of the file
-# path: path of the file, path to the target in case of symlinks
+# Represents a file entry in a git tree
+# type: tree (directory), blob (file), or symlink
+# name: filename
+# path: path of the file, or the link target for symlinks
 # url: absolute URL of the file
-# size: int, file size in bytes, None for directories and symlinks
-DirectoryEntry = namedtuple('DirectoryEntry', 'type, name, path, url, size')
+# size: size in bytes from git ls-tree, None for directories
+# date: last committer date (YYYY-MM-DD) that touched this entry, or None
+DirectoryEntry = namedtuple('DirectoryEntry', 'type, name, path, url, size, date')
 
 # Returns a list of DirectoryEntry objects with information about files in a directory
 # base_url: file URLs will be created by appending file path to this URL. It shouldn't end with a slash
@@ -584,23 +585,32 @@ DirectoryEntry = namedtuple('DirectoryEntry', 'type, name, path, url, size')
 def get_directory_entries(q: Query, base_url, tag: str, path: str) -> list[DirectoryEntry]:
     dir_entries = []
     lines = q.get_dir_contents(tag, path)
+    pending = []
 
     for l in lines:
-        type, name, size, perm = l.split(' ')
+        entry_type, name, size, perm = l.split(' ')
         file_path = f"{ path }/{ name }"
 
-        if type == 'tree':
-            dir_entries.append(DirectoryEntry('tree', name, file_path, f"{ base_url }{ file_path }", None))
-        elif type == 'blob':
+        if entry_type == 'tree':
+            pending.append(('tree', name, file_path, f"{ base_url }{ file_path }", None))
+        elif entry_type == 'blob':
             # 120000 permission means it's a symlink
             if perm == '120000':
                 dir_path = path if path.endswith('/') else path + '/'
                 link_contents = q.get_file_raw(tag, file_path)
                 link_target_path = os.path.abspath(dir_path + link_contents)
 
-                dir_entries.append(DirectoryEntry('symlink', name, link_target_path, f"{ base_url }{ link_target_path }", size))
+                pending.append(('symlink', name, link_target_path, f"{ base_url }{ link_target_path }", size))
             else:
-                dir_entries.append(DirectoryEntry('blob', name, file_path, f"{ base_url }{ file_path }", size))
+                pending.append(('blob', name, file_path, f"{ base_url }{ file_path }", size))
+
+    # Dates are keyed by the entry's own name. Symlink dates are the link
+    # itself, not the target. A failure here leaves every date blank.
+    dates = q.get_dir_dates(tag, path, [entry[1] for entry in pending])
+    for entry_type, name, entry_path, url, size in pending:
+        dir_entries.append(DirectoryEntry(
+            entry_type, name, entry_path, url, size, dates.get(name),
+        ))
 
     return dir_entries
 

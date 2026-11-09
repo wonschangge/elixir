@@ -21,6 +21,7 @@
 from .lib import script, scriptLines, decode
 from . import lib
 from . import data
+from .dir_dates import load_dir_dates
 import os
 from collections import OrderedDict
 from urllib import parse
@@ -137,6 +138,12 @@ class Query:
     def get_dir_contents(self, version, path):
         entries_str =  decode(self.script('get-dir', version, path))
         return entries_str.split("\n")[:-1]
+
+    # Last committer date (YYYY-MM-DD) of each immediate child of path.
+    # One git log covers files and directories. Missing dates are omitted
+    # and lookup failures return an empty dict so the listing still renders.
+    def get_dir_dates(self, version, path, names):
+        return load_dir_dates(self.getEnv(), version, path, names)
 
     # Returns indexed versions, as a tree of OrderedDict.
     # It has a depth of 3, for example: v3 v3.1 v3.1-rc10.

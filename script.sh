@@ -94,6 +94,28 @@ get_dir()
         sort -t ' ' -k 1,1r -k 2,2
 }
 
+# Stream newest-first commit dates for one directory.
+# Each commit starts with 0x1f + YYYY-MM-DD (committer date). Changed paths
+# follow, one per line, relative to the repository root. opt1 is the Elixir
+# version (run through version_rev). opt2 is the directory ("" or "/..."),
+# the same shape get-dir receives. Callers stop reading once every immediate
+# child has a date.
+get_dir_log()
+{
+    v=`printf '%s\n' "$opt1" | version_rev`
+    dir=`denormalize "$opt2"`
+    if [ -z "$v" ]; then
+        exit 0
+    fi
+    if [ -z "$dir" ]; then
+        exec git --no-pager log --no-color --no-renames --no-notes \
+            --pretty='format:%x1f%cs' --name-only "$v" -- .
+    fi
+    exec git --no-pager log --no-color --no-renames --no-notes \
+        --pretty='format:%x1f%cs' --name-only "$v" -- "$dir"
+    exit 1
+}
+
 tokenize_file()
 {
     if [ "$opt1" = -b ]; then
@@ -351,6 +373,10 @@ case $cmd in
 
     get-dir)
         get_dir
+        ;;
+
+    get-dir-log)
+        get_dir_log
         ;;
 
     list-blobs)
