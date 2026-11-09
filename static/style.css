@@ -748,7 +748,7 @@ h2 {
   margin-top: 0.5em;
   margin-bottom: 2em;
 }
-.lxrtree table td:first-child {
+.lxrtree table td.col-meta {
   width: 1%;
 }
 .lxrtree table td a {
@@ -787,6 +787,12 @@ h2 {
   opacity: 0.6;
   min-height: 1.5em; /* line_height + 2 * padding = 1.2em + 2 * 0.15em */
   text-align: right;
+}
+.date {
+  opacity: 0.6;
+  min-height: 1.5em; /* same row height as .size when the cell is empty */
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 
