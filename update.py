@@ -316,7 +316,8 @@ class UpdateRefs(Thread):
             if family == 'K':
                 prefix = b'CONFIG_'
 
-            tokens = scriptLines('tokenize-file', '-b', hash, family)
+            # The tokenizer uses the filename to tell .tsx/.jsx from .ts/.js.
+            tokens = scriptLines('tokenize-file', '-b', hash, family, filename)
             even = True
             line_num = 1
             idents = {}
@@ -392,9 +393,10 @@ class UpdateDocs(Thread):
                 filename = db.file.get(idx)
 
             family = lib.getFileFamily(filename)
-            # parse-docs understands C doc comments only. Makefiles and
-            # Python files have nothing for it to index.
-            if family in [None, 'M', 'P']: continue
+            # parse-docs understands C doc comments only. Makefiles,
+            # Python, and TypeScript/JavaScript files have nothing for it
+            # to index.
+            if family in [None, 'M', 'P', 'T']: continue
 
             lines = scriptLines('parse-docs', hash, filename)
             with docs_lock:
@@ -456,7 +458,7 @@ class UpdateComps(Thread):
 
             family = lib.getFileFamily(filename)
             # DT compatible strings are parsed from C, DTS, and binding docs.
-            if family in [None, 'K', 'M', 'P']: continue
+            if family in [None, 'K', 'M', 'P', 'T']: continue
 
             lines = compatibles_parser.run(scriptLines('get-blob', hash), family)
             comps = {}
