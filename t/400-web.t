@@ -42,7 +42,9 @@ http_request_ok 'index query', $tenv, '/testproj/v5.4/source',
     [ qr{^Content-Type:\s*text/html}, qr{href="/testproj/v5.4/source/issue102.c"},
         qr{href="/testproj/v5.4/source/arch"},
         qr{href="/testproj/v5.4/source/python"},
-        qr{<option value="P"}, qr{Python} ], 1;
+        qr{href="/testproj/v5.4/source/typescript"},
+        qr{<option value="P"}, qr{Python},
+        qr{<option value="T"}, qr{TypeScript/JavaScript} ], 1;
 
 http_request_ok 'identifier query', $tenv, '/testproj/v5.4/ident/gsb_buffer',
     [ qr{^Content-Type:\s*text/html}, qr{\bgsb_buffer\b},
@@ -102,6 +104,42 @@ http_request_ok 'python source links identifiers', $tenv,
         qr{class="ident" href="/testproj/v5.4/P/ident/py_make_widget"},
         qr{class="ident" href="/testproj/v5.4/P/ident/PyWidget"},
         qr{py_make_widget in a comment should not count},
+    ], 1;
+
+http_request_ok 'typescript ident query', $tenv, '/testproj/v5.4/T/ident/ts_make_widget',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{typescript/ts_widgets\.ts},
+        qr{line 22},
+        qr{as a function},
+        qr{typescript/js_consumer\.js},
+        qr{<option value="T"},
+        qr{TypeScript/JavaScript},
+    ], 1;
+
+http_request_ok 'typescript ident is absent from the C family', $tenv,
+    '/testproj/v5.4/C/ident/ts_make_widget',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{Unknown identifier 'ts_make_widget'},
+    ], 1;
+
+http_request_ok 'typescript source links identifiers', $tenv,
+    '/testproj/v5.4/source/typescript/ts_widgets.ts',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{class="ident" href="/testproj/v5.4/T/ident/ts_make_widget"},
+        qr{class="ident" href="/testproj/v5.4/T/ident/TsWidget"},
+        qr{ts_make_widget in a comment should not count},
+    ], 1;
+
+http_request_ok 'tsx source links tags but not JSX text', $tenv,
+    '/testproj/v5.4/source/typescript/ts_widget_view.tsx',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{class="ident" href="/testproj/v5.4/T/ident/TsWidget"},
+        qr{class="ident" href="/testproj/v5.4/T/ident/render"},
+        qr{>ts_make_widget<},
     ], 1;
 
 done_testing;

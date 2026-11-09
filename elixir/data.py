@@ -46,7 +46,20 @@ defTypeR = {
     'v': 'variable',
     'x': 'externvar',
     # 'c' is already config. Python classes use 'C'.
-    'C': 'class'}
+    'C': 'class',
+    # Universal Ctags TypeScript/JavaScript kind names. The letters are
+    # Elixir storage codes; ctags kind letters collide with the C codes above
+    # (for example ctags 'C' is constant, while 'C' here is class).
+    'a': 'alias',
+    'g': 'generator',
+    'G': 'getter',
+    'i': 'interface',
+    'k': 'constant',
+    'n': 'namespace',
+    'o': 'method',
+    'q': 'property',
+    'S': 'setter',
+}
 
 defTypeD = {v: k for k, v in defTypeR.items()}
 
@@ -213,6 +226,7 @@ class DB:
         self.defs_cache['D'] = BsdDB(dir + '/definitions-cache-D.db', ro, NOOP, shared=shared)
         self.defs_cache['M'] = BsdDB(dir + '/definitions-cache-M.db', ro, NOOP, shared=shared)
         self.defs_cache['P'] = BsdDB(dir + '/definitions-cache-P.db', ro, NOOP, shared=shared)
+        self.defs_cache['T'] = BsdDB(dir + '/definitions-cache-T.db', ro, NOOP, shared=shared)
         assert sorted(self.defs_cache.keys()) == sorted(lib.CACHED_DEFINITIONS_FAMILIES)
         self.refs = BsdDB(dir + '/references.db', ro, RefList, shared=shared)
         self.docs = BsdDB(dir + '/doccomments.db', ro, RefList, shared=shared)
@@ -234,6 +248,7 @@ class DB:
         self.defs_cache['D'].close()
         self.defs_cache['M'].close()
         self.defs_cache['P'].close()
+        self.defs_cache['T'].close()
         self.refs.close()
         self.docs.close()
         if self.dtscomp:
