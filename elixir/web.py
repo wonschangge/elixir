@@ -391,6 +391,7 @@ TOPBAR_FAMILIES = {
     'D': 'Devicetree',
     'B': 'DT compatible',
     'P': 'Python',
+    'T': 'TypeScript/JavaScript',
 }
 
 # Returns a list of names of top-level directories in basedir

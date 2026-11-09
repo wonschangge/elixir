@@ -75,7 +75,8 @@ ok_or_die( -d $db_dir, 'database dir exists',
 # Make sure the database has the files we expect
 ok( (-r File::Spec->catfile($db_dir, $_)), "$_ exists" )
     foreach qw(blobs.db definitions.db filenames.db hashes.db references.db
-                variables.db versions.db definitions-cache-P.db);
+                variables.db versions.db definitions-cache-P.db
+                definitions-cache-T.db);
 
 # Spot-check some identifiers
 
@@ -224,6 +225,157 @@ run_produces_ok('python file query keeps text and links real idents',
         qr{\x{1b}\[31mPyWidget\x{1b}\[0m},
         { not => qr{# \x{1b}\[31mpy_make_widget} },
         { not => qr{"\x{1b}\[31mpy_make_widget} },
+    ],
+    MUST_SUCCEED);
+
+# TypeScript/JavaScript family: classes, functions, exports, imports,
+# and cross-file calls. Comments, strings, template text, regexes, and
+# JSX text are not references. Imports and function-scoped consts are
+# not definitions.
+
+run_produces_ok('typescript ident query (function)',
+    [$query_py, qw(ident v5.4 ts_make_widget T)],
+    [qr{^Symbol Definitions:}, qr{^Symbol References:},
+        { def => qr{typescript/ts_widgets\.ts.+\b22\b.+\bfunction\b} },
+        { ref => qr{typescript/ts_widgets\.ts.+\b29\b} },
+        { ref => qr{typescript/ts_widgets\.ts.+\b30\b} },
+        { ref => qr{typescript/ts_widgets\.ts.+\b36\b} },
+        { ref => qr{typescript/ts_widget_view\.tsx.+\b4\b} },
+        { ref => qr{typescript/js_consumer\.js.+\b4\b} },
+        { ref => { not => qr{ts_widgets\.ts.+\b1\b} } },
+        { ref => { not => qr{ts_widgets\.ts.+\b6\b} } },
+        { ref => { not => qr{ts_widgets\.ts.+\b7\b} } },
+        { ref => { not => qr{ts_widgets\.ts.+\b14\b} } },
+        { ref => { not => qr{ts_widgets\.ts.+\b22\b} } },
+        { ref => { not => qr{ts_widgets\.ts.+\b23\b} } },
+        { ref => { not => qr{ts_widgets\.ts.+\b24\b} } },
+        { ref => { not => qr{ts_widgets\.ts.+\b31\b} } },
+        { ref => { not => qr{ts_widget_view\.tsx.+\b5\b} } },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('typescript ident query (class)',
+    [$query_py, qw(ident v5.4 TsWidget T)],
+    [
+        { def => qr{typescript/ts_widgets\.ts.+\b5\b.+\bclass\b} },
+        { ref => qr{typescript/ts_widgets\.ts.+\b25\b} },
+        { ref => qr{typescript/ts_widget_view\.tsx.+\b5\b} },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('typescript ident query (constant)',
+    [$query_py, qw(ident v5.4 TS_WIDGET_LIMIT T)],
+    [
+        { def => qr{typescript/ts_widgets\.ts.+\b3\b.+\bconstant\b} },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('typescript ident query (method)',
+    [$query_py, qw(ident v5.4 render T)],
+    [
+        { def => qr{typescript/ts_widgets\.ts.+\b13\b.+\bmethod\b} },
+        { ref => qr{typescript/ts_widgets\.ts.+\b32\b} },
+        { ref => qr{typescript/ts_widget_view\.tsx.+\b5\b} },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('typescript ident query (interface)',
+    [$query_py, qw(ident v5.4 TsWidgetOptions T)],
+    [
+        { def => qr{typescript/ts_widgets\.ts.+\b18\b.+\binterface\b} },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('typescript local const is not a definition',
+    [$query_py, qw(ident v5.4 text T)],
+    [
+        { def => { not => qr{\S} } },
+        { ref => { not => qr{\S} } },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('javascript ident query (export, import, cross-file call)',
+    [$query_py, qw(ident v5.4 js_consume T)],
+    [
+        { def => qr{typescript/js_consumer\.js.+\b3\b.+\bfunction\b} },
+        { def => { not => qr{js_view\.jsx} } },
+        { ref => qr{typescript/js_view\.jsx.+\b4\b} },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('tsx export is a function',
+    [$query_py, qw(ident v5.4 TsWidgetView T)],
+    [
+        { def => qr{typescript/ts_widget_view\.tsx.+\b3\b.+\bfunction\b} },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('typescript ident is not a C symbol',
+    [$query_py, qw(ident v5.4 ts_make_widget C)],
+    [
+        { def => { not => qr{\S} } },
+        { ref => { not => qr{\S} } },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('typescript ident is not a Python symbol',
+    [$query_py, qw(ident v5.4 ts_make_widget P)],
+    [
+        { def => { not => qr{\S} } },
+        { ref => { not => qr{\S} } },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('python ident is not a TypeScript symbol',
+    [$query_py, qw(ident v5.4 py_make_widget T)],
+    [
+        { def => { not => qr{\S} } },
+        { ref => { not => qr{\S} } },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('C ident is not a TypeScript symbol',
+    [$query_py, qw(ident v5.4 i2c_acpi_notify T)],
+    [
+        { def => { not => qr{\S} } },
+        { ref => { not => qr{\S} } },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('typescript ident is visible in all-symbols search',
+    [$query_py, qw(ident v5.4 ts_make_widget A)],
+    [
+        { def => qr{typescript/ts_widgets\.ts.+\bfunction\b} },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('typescript file query keeps text and links real idents',
+    [$query_py, qw(file v5.4 /typescript/ts_widgets.ts)],
+    [
+        qr{Module doc mentions ts_make_widget},
+        qr{// ts_make_widget in a comment should not count},
+        qr{"ts_make_widget inside a string"},
+        qr{skip ts_make_widget},
+        qr{/ts_make_widget/g},
+        qr{\x{1b}\[31mts_make_widget\x{1b}\[0m\("demo"\)},
+        qr{\$\{\x{1b}\[31mts_make_widget\x{1b}\[0m\("tmpl"\)\}},
+        qr{\x{1b}\[31mTsWidget\x{1b}\[0m},
+        { not => qr{mentions \x{1b}\[31mts_make_widget} },
+        { not => qr{// \x{1b}\[31mts_make_widget} },
+        { not => qr{"\x{1b}\[31mts_make_widget} },
+        { not => qr{skip \x{1b}\[31mts_make_widget} },
+        { not => qr{/\x{1b}\[31mts_make_widget} },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('tsx file query skips JSX text and links tags',
+    [$query_py, qw(file v5.4 /typescript/ts_widget_view.tsx)],
+    [
+        qr{>ts_make_widget<},
+        qr{\x{1b}\[31mts_make_widget\x{1b}\[0m\(props\.},
+        qr{\x{1b}\[31mTsWidget\x{1b}\[0m},
+        qr{\x{1b}\[31mrender\x{1b}\[0m\(\)},
+        { not => qr{>\x{1b}\[31mts_make_widget\x{1b}\[0m<} },
     ],
     MUST_SUCCEED);
 

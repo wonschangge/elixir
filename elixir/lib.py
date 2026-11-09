@@ -206,11 +206,11 @@ def currentProject():
     return os.path.basename(os.path.dirname(getDataDir()))
 
 # List all families supported by Elixir
-families = ['A', 'B', 'C', 'D', 'K', 'M', 'P']
+families = ['A', 'B', 'C', 'D', 'K', 'M', 'P', 'T']
 
 # Those families have databases that cache the content of definitions.db.
 # This allows faster lookup.
-CACHED_DEFINITIONS_FAMILIES = ['C', 'K', 'D', 'M', 'P']
+CACHED_DEFINITIONS_FAMILIES = ['C', 'K', 'D', 'M', 'P', 'T']
 
 def validFamily(family):
     return family in families
@@ -227,6 +227,12 @@ def getFileFamily(filename):
         # Before the Kconfig/Makefile name checks so that files such as
         # Kconfig.py stay in the Python family.
         return 'P' # Python
+    elif ext in ['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs']:
+        # Before the Kconfig/Makefile name checks so that files such as
+        # Kconfig.ts stay in the TypeScript/JavaScript family. The two
+        # languages share one family because a .ts file can call a symbol
+        # defined in a .js file (and the other way around).
+        return 'T'
     elif name[:7] == 'kconfig' and ext != '.rst':
         # Some files are named like Kconfig-nommu so we only check the first 7 letters
         # We also exclude documentation files that can be named kconfig
@@ -245,6 +251,9 @@ compatibility_list = {
     'M' : ['K'],
     # Python identifiers are not interchangeable with C, Kconfig, or DTS.
     'P' : ['P'],
+    # TypeScript and JavaScript identifiers are not interchangeable with
+    # C, Kconfig, DTS, Makefile, or Python symbols.
+    'T' : ['T'],
 }
 
 # Check if families are compatible

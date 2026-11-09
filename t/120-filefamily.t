@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# 120-filefamily.t: getFileFamily() classifications, including Python.
+# 120-filefamily.t: getFileFamily() classifications, including Python and TypeScript.
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -33,6 +33,22 @@ cases = {
     "src/pkg/mod.py": "P",
     "Makefile.py": "P",
     "Kconfig.py": "P",
+    "foo.ts": "T",
+    "foo.tsx": "T",
+    "foo.mts": "T",
+    "foo.cts": "T",
+    "foo.d.ts": "T",
+    "FOO.TS": "T",
+    "src/pkg/mod.ts": "T",
+    "Makefile.ts": "T",
+    "Kconfig.ts": "T",
+    "foo.js": "T",
+    "foo.jsx": "T",
+    "foo.mjs": "T",
+    "foo.cjs": "T",
+    "FOO.JS": "T",
+    "Makefile.js": "T",
+    "Kconfig.js": "T",
     "foo.pyc": None,
     "foo.pyi": None,
     "README": None,

@@ -111,6 +111,19 @@ tokenize_file()
         return
     fi
 
+    # TypeScript and JavaScript comments, strings, templates, and regexes
+    # are not C tokens. opt4 is the filename when the caller has one (the
+    # -b form stores only a blob hash in opt2); otherwise opt2 is the path.
+    if [ "$opt3" = "T" ]; then
+        hint=$opt4
+        if [ -z "$hint" ]; then
+            hint=$opt2
+        fi
+        git cat-file blob "$ref" 2>/dev/null |
+        "$script_dir/tokenize-typescript.py" "$hint"
+        return
+    fi
+
     if [ $opt3 = "D" ]; then #Don't cut around '-' in devicetrees
         regex='s%((/\*.*?\*/|//.*?\001|[^'"'"']"(\\.|.)*?"|# *include *<.*?>|[^\w-])+)([\w-]+)?%\1\n\4\n%g'
     else
@@ -165,6 +178,9 @@ parse_defs()
         ;;
     "P")
         parse_defs_P
+        ;;
+    "T")
+        parse_defs_T
         ;;
     esac
 }
@@ -226,6 +242,48 @@ parse_defs_P()
     rmdir $tmp
 }
 
+parse_defs_T()
+{
+    tmp=`mktemp -d`
+    full_path=$tmp/$opt2
+    git cat-file blob "$opt1" > "$full_path"
+
+    # Stock Universal Ctags. TypeScript and JavaScript are one family, but
+    # they are different ctags languages. .tsx is not in the TypeScript map,
+    # so --language-force is required. The kind list (no + or -) keeps
+    # locals and parameters off, and does not enable an import kind.
+    # JavaScript field (M) is omitted: ctags 5.9 reports JSX attribute
+    # expressions as fields of an anonymous class.
+    lower=$(printf '%s' "$opt2" | tr '[:upper:]' '[:lower:]')
+    case $lower in
+    *.js|*.jsx|*.mjs|*.cjs)
+        lang=JavaScript
+        # class, function, method, property, constant, variable,
+        # generator, getter, setter
+        kinds_opt=--kinds-javascript=cfmpCvgGS
+        ;;
+    *)
+        lang=TypeScript
+        # alias, class, constant, enumerator, function, enum, interface,
+        # method, namespace, property, variable, generator
+        kinds_opt=--kinds-typescript=acCefgimnpvG
+        ;;
+    esac
+
+    # Function-scoped const is kind "constant", not "local". Drop those so
+    # they are not definitions, matching the Python locals policy.
+    # %{scopeKind} is empty for module-level tags.
+    ctags -x --_xformat='%{name} %{kind} %{line} %{scopeKind}' \
+        --language-force="$lang" "$kinds_opt" "$full_path" |
+    awk '
+        ($4 == "function" || $4 == "method") && ($2 == "constant" || $2 == "variable") { next }
+        { print $1, $2, $3 }
+    '
+
+    rm "$full_path"
+    rmdir $tmp
+}
+
 parse_docs()
 {
     tmpfile=`mktemp`
@@ -256,6 +314,7 @@ cmd=$1
 opt1=$2
 opt2=$3
 opt3=$4
+opt4=$5
 shift
 
 denormalize()
