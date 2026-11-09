@@ -104,6 +104,8 @@ http_request_ok 'python source links identifiers', $tenv,
         qr{class="ident" href="/testproj/v5.4/P/ident/py_make_widget"},
         qr{class="ident" href="/testproj/v5.4/P/ident/PyWidget"},
         qr{py_make_widget in a comment should not count},
+        { not => qr{source-image} },
+        { not => qr{\bdownload=} },
     ], 1;
 
 http_request_ok 'typescript ident query', $tenv, '/testproj/v5.4/T/ident/ts_make_widget',
@@ -141,5 +143,49 @@ http_request_ok 'tsx source links tags but not JSX text', $tenv,
         qr{class="ident" href="/testproj/v5.4/T/ident/render"},
         qr{>ts_make_widget<},
     ], 1;
+
+# Image blobs are previewed, not highlighted. SVG markup must stay out of
+# the HTML page (it is loaded only through <img src="?raw">).
+my %image_types = (
+    'images/pixel.png' => 'image/png',
+    'images/pixel.jpg' => 'image/jpeg',
+    'images/pixel.jpeg' => 'image/jpeg',
+    'images/pixel.gif' => 'image/gif',
+    'images/pixel.webp' => 'image/webp',
+    'images/badge.svg' => 'image/svg+xml',
+);
+
+foreach my $path (sort keys %image_types) {
+    my $ctype = $image_types{$path};
+    my ($name) = $path =~ m{/([^/]+)$};
+
+    http_request_ok "image preview $name", $tenv,
+        "/testproj/v5.4/source/$path",
+        [
+            qr{^Content-Type:\s*text/html},
+            qr{class="lxrcode source-image"},
+            qr{<img src="\?raw" alt="\Q$name\E"},
+            qr{download="\Q$name\E"},
+            { not => qr{highlighttable} },
+            { not => qr{alert\('xss'\)} },
+        ];
+
+    http_request_ok "image raw $name", $tenv,
+        "/testproj/v5.4/source/$path?raw",
+        [
+            qr{^Content-Type:\s*\Q$ctype\E\s*$},
+            qr{^content-disposition:\s*inline;}i,
+            qr{^x-content-type-options:\s*nosniff}i,
+            qr{^content-security-policy:.*\bsandbox\b}i,
+        ];
+}
+
+http_request_ok 'png raw keeps the image bytes', $tenv,
+    '/testproj/v5.4/source/images/pixel.png?raw',
+    [ qr{\x89PNG\r\n} ];
+
+http_request_ok 'svg raw still serves the file itself', $tenv,
+    '/testproj/v5.4/source/images/badge.svg?raw',
+    [ qr{<svg xmlns="http://www.w3.org/2000/svg"}, qr{alert\('xss'\)} ];
 
 done_testing;

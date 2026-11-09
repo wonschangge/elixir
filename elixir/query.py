@@ -201,6 +201,12 @@ class Query:
     def get_file_raw(self, version, path):
         return decode(self.script('get-file', version, path))
 
+    # Same bytes as get-file, without the UTF-8/ISO-8859-1 decode that
+    # corrupts image blobs (valid UTF-8 sequences change length; the
+    # ISO-8859-1 fallback is only a 1:1 map when decoding fails).
+    def get_file_bytes(self, version, path):
+        return self.script('get-file', version, path)
+
     def get_idents_comps(self, version, ident):
 
         # DT bindings compatible strings are handled differently

@@ -9,14 +9,20 @@
 {%- endblock %}
 
 {% block main %}
+{% if image_url %}
+<div class="lxrcode source-image">
+    <img src="{{ image_url|e }}" alt="{{ image_alt|e }}">
+</div>
+{% else %}
 <div class="lxrcode">
     {{ code }}
 </div>
+{% endif %}
 {% endblock %}
 
 {% block footer %}
 <span id="file-download-link">
-    <a href="?raw">Download file</a>
+    <a href="?raw"{% if image_alt %} download="{{ image_alt|e }}"{% endif %}>Download file</a>
 </span>
 {% endblock %}
 
