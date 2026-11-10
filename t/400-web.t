@@ -43,19 +43,72 @@ http_request_ok 'index query', $tenv, '/testproj/v5.4/source',
         qr{href="/testproj/v5.4/source/arch"},
         qr{href="/testproj/v5.4/source/python"},
         qr{href="/testproj/v5.4/source/typescript"},
+        qr{href="/testproj/v5\.4/source/\.gitignore"},
+        qr{href="/testproj/v5\.4/source/\.agents"},
+        qr{href="/testproj/v5\.4/source/\.github"},
         qr{<option value="P"}, qr{Python},
         qr{<option value="T"}, qr{TypeScript/JavaScript},
         qr{href="/testproj/v5\.4/source/issue102\.c" data-commit-date="\d{4}-\d{2}-\d{2}"},
         qr{href="/testproj/v5\.4/source/arch" data-commit-date="\d{4}-\d{2}-\d{2}"},
+        qr{href="/testproj/v5\.4/source/\.gitignore" data-commit-date="\d{4}-\d{2}-\d{2}"},
+        qr{href="/testproj/v5\.4/source/\.agents" data-commit-date="\d{4}-\d{2}-\d{2}"},
         qr{<time datetime="\d{4}-\d{2}-\d{2}">\d{4}-\d{2}-\d{2}</time>},
+        # '.' / '..' are not tree entries, and '.git' is not invented.
+        { not => qr{^\s*\.\s*$}m },
+        { not => qr{^\s*\.\.\s*$}m },
+        { not => qr{/source/\.git(?:/|")} },
         { not => qr{Parent directory} } ], 1;
+
+# Hidden directories and files that exist in the tree use the same URLs
+# as ordinary paths.
+http_request_ok 'hidden directory listing', $tenv,
+    '/testproj/v5.4/source/.agents',
+    [ qr{^Content-Type:\s*text/html},
+        qr{class="tree-icon icon-back"[^>]*>Parent directory},
+        qr{href="/testproj/v5\.4/source/\.agents/notes\.txt"},
+        qr{href="/testproj/v5\.4/source/\.agents/\.secret"},
+        qr{href="/testproj/v5\.4/source/\.agents/notes\.txt" data-commit-date="\d{4}-\d{2}-\d{2}"},
+        { not => qr{^\s*\.\s*$}m },
+        { not => qr{^\s*\.\.\s*$}m },
+        { not => qr{/source/\.git(?:/|")} } ], 1;
+
+http_request_ok 'hidden directory of ordinary files', $tenv,
+    '/testproj/v5.4/source/.github',
+    [ qr{^Content-Type:\s*text/html},
+        qr{href="/testproj/v5\.4/source/\.github/CODEOWNERS"} ], 1;
+
+http_request_ok 'hidden file', $tenv,
+    '/testproj/v5.4/source/.gitignore',
+    [ qr{^Content-Type:\s*text/html},
+        qr{Committed hidden file for directory listings},
+        { not => qr{File not found} },
+        { not => qr{Path contains characters that are not allowed} } ], 1;
+
+http_request_ok 'file inside a hidden directory', $tenv,
+    '/testproj/v5.4/source/.agents/notes.txt',
+    [ qr{^Content-Type:\s*text/html},
+        qr{agent notes},
+        { not => qr{File not found} } ], 1;
+
+http_request_ok 'hidden file inside a hidden directory', $tenv,
+    '/testproj/v5.4/source/.agents/.secret',
+    [ qr{^Content-Type:\s*text/html},
+        qr{secret note},
+        { not => qr{File not found} } ], 1;
 
 http_request_ok 'subdirectory dates keep the parent row', $tenv,
     '/testproj/v5.4/source/drivers/i2c',
     [ qr{^Content-Type:\s*text/html},
         qr{class="tree-icon icon-back"[^>]*>Parent directory},
         qr{href="/testproj/v5\.4/source/drivers/i2c/i2c-core-acpi\.c" data-commit-date="\d{4}-\d{2}-\d{2}"},
+        qr{href="/testproj/v5\.4/source/drivers/i2c/\.keep"},
         qr{bytes} ], 1;
+
+http_request_ok 'hidden file in an ordinary directory', $tenv,
+    '/testproj/v5.4/source/drivers/i2c/.keep',
+    [ qr{^Content-Type:\s*text/html},
+        qr{i2c keep},
+        { not => qr{File not found} } ], 1;
 
 http_request_ok 'identifier query', $tenv, '/testproj/v5.4/ident/gsb_buffer',
     [ qr{^Content-Type:\s*text/html}, qr{\bgsb_buffer\b},
