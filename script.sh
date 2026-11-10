@@ -88,9 +88,12 @@ get_file()
 get_dir()
 {
         v=`echo $opt1 | version_rev`
+        # Keep names that start with '.' (.gitignore, .github, .agents, ...).
+        # They are ordinary tree entries. Drop only '.' and '..', which are
+        # not project paths. git does not store them, and '.git' is repository
+        # metadata rather than a tree entry, so it is not invented here.
         git ls-tree -l "$v:`denormalize $opt2`" 2>/dev/null |
-        awk '{print $2" "$5" "$4" "$1}' |
-        grep -v ' \.' |
+        awk '$5 != "." && $5 != ".." { print $2" "$5" "$4" "$1 }' |
         sort -t ' ' -k 1,1r -k 2,2
 }
 
