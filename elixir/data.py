@@ -59,6 +59,10 @@ defTypeR = {
     'o': 'method',
     'q': 'property',
     'S': 'setter',
+    # Mojo. `s` is already struct and `a` is already alias; methods and
+    # members reuse the TypeScript/Python letters. `R`/`Y` are Mojo-only.
+    'R': 'trait',
+    'Y': 'comptime',
 }
 
 defTypeD = {v: k for k, v in defTypeR.items()}
@@ -227,6 +231,7 @@ class DB:
         self.defs_cache['M'] = BsdDB(dir + '/definitions-cache-M.db', ro, NOOP, shared=shared)
         self.defs_cache['P'] = BsdDB(dir + '/definitions-cache-P.db', ro, NOOP, shared=shared)
         self.defs_cache['T'] = BsdDB(dir + '/definitions-cache-T.db', ro, NOOP, shared=shared)
+        self.defs_cache['J'] = BsdDB(dir + '/definitions-cache-J.db', ro, NOOP, shared=shared)
         assert sorted(self.defs_cache.keys()) == sorted(lib.CACHED_DEFINITIONS_FAMILIES)
         self.refs = BsdDB(dir + '/references.db', ro, RefList, shared=shared)
         self.docs = BsdDB(dir + '/doccomments.db', ro, RefList, shared=shared)
@@ -249,6 +254,7 @@ class DB:
         self.defs_cache['M'].close()
         self.defs_cache['P'].close()
         self.defs_cache['T'].close()
+        self.defs_cache['J'].close()
         self.refs.close()
         self.docs.close()
         if self.dtscomp:

@@ -206,11 +206,11 @@ def currentProject():
     return os.path.basename(os.path.dirname(getDataDir()))
 
 # List all families supported by Elixir
-families = ['A', 'B', 'C', 'D', 'K', 'M', 'P', 'T']
+families = ['A', 'B', 'C', 'D', 'J', 'K', 'M', 'P', 'T']
 
 # Those families have databases that cache the content of definitions.db.
 # This allows faster lookup.
-CACHED_DEFINITIONS_FAMILIES = ['C', 'K', 'D', 'M', 'P', 'T']
+CACHED_DEFINITIONS_FAMILIES = ['C', 'K', 'D', 'M', 'P', 'T', 'J']
 
 def validFamily(family):
     return family in families
@@ -233,6 +233,10 @@ def getFileFamily(filename):
         # languages share one family because a .ts file can call a symbol
         # defined in a .js file (and the other way around).
         return 'T'
+    elif ext == '.mojo' or ext == '.🔥':
+        # Before the Kconfig/Makefile name checks so that files such as
+        # Kconfig.mojo stay in the Mojo family. .🔥 is Mojo's alternate suffix.
+        return 'J' # Mojo
     elif name[:7] == 'kconfig' and ext != '.rst':
         # Some files are named like Kconfig-nommu so we only check the first 7 letters
         # We also exclude documentation files that can be named kconfig
@@ -254,6 +258,9 @@ compatibility_list = {
     # TypeScript and JavaScript identifiers are not interchangeable with
     # C, Kconfig, DTS, Makefile, or Python symbols.
     'T' : ['T'],
+    # Mojo identifiers are not interchangeable with the other families.
+    # `M` is already Makefiles, so Mojo is `J`.
+    'J' : ['J'],
 }
 
 # Check if families are compatible

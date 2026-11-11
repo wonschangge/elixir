@@ -394,9 +394,9 @@ class UpdateDocs(Thread):
 
             family = lib.getFileFamily(filename)
             # parse-docs understands C doc comments only. Makefiles,
-            # Python, and TypeScript/JavaScript files have nothing for it
-            # to index.
-            if family in [None, 'M', 'P', 'T']: continue
+            # Python, TypeScript/JavaScript, and Mojo files have nothing
+            # for it to index.
+            if family in [None, 'M', 'P', 'T', 'J']: continue
 
             lines = scriptLines('parse-docs', hash, filename)
             with docs_lock:
@@ -458,7 +458,7 @@ class UpdateComps(Thread):
 
             family = lib.getFileFamily(filename)
             # DT compatible strings are parsed from C, DTS, and binding docs.
-            if family in [None, 'K', 'M', 'P', 'T']: continue
+            if family in [None, 'K', 'M', 'P', 'T', 'J']: continue
 
             lines = compatibles_parser.run(scriptLines('get-blob', hash), family)
             comps = {}

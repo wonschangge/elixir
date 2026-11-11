@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# 120-filefamily.t: getFileFamily() classifications, including Python and TypeScript.
+# 120-filefamily.t: getFileFamily() classifications, including Python, TypeScript, and Mojo.
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -49,6 +49,13 @@ cases = {
     "FOO.JS": "T",
     "Makefile.js": "T",
     "Kconfig.js": "T",
+    "foo.mojo": "J",
+    "FOO.MOJO": "J",
+    "src/pkg/mod.mojo": "J",
+    "Makefile.mojo": "J",
+    "Kconfig.mojo": "J",
+    "spark.🔥": "J",
+    "src/std/simd.🔥": "J",
     "foo.pyc": None,
     "foo.pyi": None,
     "README": None,

@@ -136,6 +136,14 @@ tokenize_file()
         return
     fi
 
+    # Mojo comments, strings, and docstrings follow the same rule. Keywords
+    # stay in the separator text. See tokenize-mojo.py.
+    if [ "$opt3" = "J" ]; then
+        git cat-file blob "$ref" 2>/dev/null |
+        "$script_dir/tokenize-mojo.py"
+        return
+    fi
+
     # TypeScript and JavaScript comments, strings, templates, and regexes
     # are not C tokens. opt4 is the filename when the caller has one (the
     # -b form stores only a blob hash in opt2); otherwise opt2 is the path.
@@ -207,6 +215,9 @@ parse_defs()
     "T")
         parse_defs_T
         ;;
+    "J")
+        parse_defs_J
+        ;;
     esac
 }
 
@@ -249,6 +260,16 @@ parse_defs_D()
     awk '{print $1" "$2" "$3}'
     rm "$full_path"
     rmdir $tmp
+}
+
+parse_defs_J()
+{
+    # Mojo is not a Universal Ctags language. ctags 5.9 regexes cannot tell
+    # a struct field from a function-local `var` (Mojo has no braces), so
+    # definitions come from tokenize-mojo.py. Output is the same
+    # "name kind line" lines the other parsers print.
+    git cat-file blob "$opt1" 2>/dev/null |
+    "$script_dir/tokenize-mojo.py" --defs
 }
 
 parse_defs_P()
