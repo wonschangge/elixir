@@ -1735,20 +1735,22 @@ html.wrap-lines .lxrcode .linenodiv pre a {
   min-width: 0;
 }
 /* The preview's own max-width does not stop a long token from sizing the
-   page, because main is max-content. Fit the viewport while the preview
-   is showing. Original source without wrap still grows with the line. */
-.js main:has(.source-markdown:not(.show-source)) {
+   page, because main is max-content. Fit the viewport only after the
+   preview has been filled. Until .markdown-ready, and whenever Original
+   source is checked, the highlighted source stays in view — a stale
+   script.js or a failed render must not leave an empty pane. */
+.js main:has(.source-markdown.markdown-ready:not(.show-source)) {
   width: 100%;
   max-width: 100%;
 }
-.js main:has(.source-markdown:not(.show-source)) .workspace {
+.js main:has(.source-markdown.markdown-ready:not(.show-source)) .workspace {
   min-width: 0;
   max-width: 100%;
 }
-.js .source-markdown:not(.show-source) .markdown-source {
+.js .source-markdown.markdown-ready:not(.show-source) .markdown-source {
   display: none;
 }
-.js .source-markdown:not(.show-source) .markdown-preview {
+.js .source-markdown.markdown-ready:not(.show-source) .markdown-preview {
   display: block;
 }
 .js .source-markdown.show-source .markdown-source {
