@@ -282,13 +282,41 @@ http_request_ok 'markdown file previews by default', $tenv,
         qr{id="markdown-preview"},
         qr{id="markdown-source-data"},
         qr{/static/markdown-preview\.js\?v=1},
+        qr{/static/style\.css\?v=19},
+        qr{/static/script\.js\?v=19},
         qr{Elixir notes},
         qr{docs/note\.markdown},
         # Unchecked: rendered preview is the default. The box is not checked.
+        # markdown-ready is added only after the client fills the preview.
         { not => qr{id="markdown-original"[^>]*\bchecked\b} },
+        { not => qr{markdown-ready} },
         { not => qr{<script>alert\('xss-md'\)} },
         { not => qr{</script><script>} },
     ], 1;
+
+# The highlighted source stays visible until JS adds markdown-ready.
+# Hiding it on the js class alone is the blank-pane bug.
+{
+    open my $css_fh, '<', "$Bin/../static/style.css" or die $!;
+    local $/;
+    my $css = <$css_fh>;
+    close $css_fh;
+    like $css,
+        qr/\.js \.source-markdown\.markdown-ready:not\(\.show-source\) \.markdown-source \{\s*display:\s*none;\s*\}/,
+        'source hides only after markdown-ready';
+    like $css,
+        qr/\.js \.source-markdown\.markdown-ready:not\(\.show-source\) \.markdown-preview \{\s*display:\s*block;\s*\}/,
+        'preview shows only after markdown-ready';
+    like $css,
+        qr/\.js main:has\(\.source-markdown\.markdown-ready:not\(\.show-source\)\) \{\s*width:\s*100%;\s*max-width:\s*100%;\s*\}/,
+        'viewport fit waits for markdown-ready';
+    unlike $css,
+        qr/\.js \.source-markdown:not\(\.show-source\) \.markdown-source \{\s*display:\s*none;\s*\}/,
+        'js class alone does not hide the source';
+    unlike $css,
+        qr/\.js main:has\(\.source-markdown:not\(\.show-source\)\) \{/,
+        'js class alone does not force the preview viewport width';
+}
 
 http_request_ok 'markdown extension uses the same preview', $tenv,
     '/testproj/v5.4/source/docs/note.markdown',
