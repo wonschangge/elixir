@@ -8,11 +8,33 @@
     Elixir Cross Referencer - source code of {{ current_project|capitalize }} {{ current_tag -}} {{- '' if path|length <= 1 else ': ' + path[1:] }}
 {%- endblock %}
 
+{% block head_extra %}
+{% if not image_url %}
+<script>
+    try {
+        if (window.localStorage.getItem('wrap-lines') === 'true') {
+            document.documentElement.classList.add('wrap-lines');
+        }
+    } catch (e) {}
+</script>
+{% endif %}
+{% endblock %}
+
 {% block main %}
 {% if image_url %}
 <div class="lxrcode source-image">
     <img src="{{ image_url|e }}" alt="{{ image_alt|e }}">
 </div>
+{% elif markdown %}
+<div class="lxrcode source-markdown" id="markdown-view"
+    data-source-base="{{ source_base_url|e }}"
+    data-file-path="{{ path|e }}">
+    <div class="markdown-preview" id="markdown-preview"></div>
+    <div class="markdown-source" id="markdown-source">
+        {{ code }}
+    </div>
+</div>
+<script type="application/json" id="markdown-source-data">{{ markdown_text|tojson }}</script>
 {% else %}
 <div class="lxrcode">
     {{ code }}
@@ -20,9 +42,20 @@
 {% endif %}
 {% endblock %}
 
+{% block extra_scripts %}
+{% if markdown %}
+<script src="/static/markdown-preview.js?v=1"></script>
+{% endif %}
+{% endblock %}
+
 {% block footer %}
+{% if not image_url %}
+<label class="file-view-option" for="wrap-lines"><input type="checkbox" id="wrap-lines" autocomplete="off"> Wrap lines</label>
+{% endif %}
+{% if markdown %}
+<label class="file-view-option" for="markdown-original"><input type="checkbox" id="markdown-original" autocomplete="off"> Original source</label>
+{% endif %}
 <span id="file-download-link">
     <a href="?raw"{% if image_alt %} download="{{ image_alt|e }}"{% endif %}>Download file</a>
 </span>
 {% endblock %}
-

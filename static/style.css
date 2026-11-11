@@ -1672,3 +1672,175 @@ input[data-autocomplete] {
 .autocomplete.open:empty {
   display: none;
 }
+
+/* file view: wrap + markdown preview */
+
+.file-view-option {
+  margin-left: 1rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.file-view-option input {
+  margin: 0 0.25em 0 0;
+  vertical-align: -0.125em;
+}
+.footer:has(.file-view-option) {
+  height: auto;
+  min-height: 25px;
+  line-height: 1.7;
+}
+
+/* Constrain the file to the viewport so pre-wrap actually wraps. */
+html.wrap-lines main {
+  width: 100%;
+  max-width: 100%;
+}
+html.wrap-lines .workspace {
+  min-width: 0;
+  max-width: 100%;
+}
+html.wrap-lines .lxrcode .highlighttable {
+  width: 100%;
+  table-layout: fixed;
+}
+html.wrap-lines .lxrcode td.linenos {
+  width: 6rem;
+  white-space: nowrap;
+}
+html.wrap-lines .lxrcode td.code {
+  width: auto;
+}
+html.wrap-lines .lxrcode .highlight .code pre,
+html.wrap-lines .lxrcode span[id^='codeline-'] {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+html.wrap-lines .lxrcode span[id^='codeline-'].line-highlight {
+  height: auto;
+  width: auto;
+}
+html.wrap-lines .lxrcode .linenodiv pre span,
+html.wrap-lines .lxrcode .linenodiv pre a {
+  vertical-align: top;
+}
+
+.markdown-preview {
+  display: none;
+  box-sizing: border-box;
+  max-width: min(52rem, 100%);
+  padding: 1.25em 1.5em 4em;
+  color: #222;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+/* The preview's own max-width does not stop a long token from sizing the
+   page, because main is max-content. Fit the viewport while the preview
+   is showing. Original source without wrap still grows with the line. */
+.js main:has(.source-markdown:not(.show-source)) {
+  width: 100%;
+  max-width: 100%;
+}
+.js main:has(.source-markdown:not(.show-source)) .workspace {
+  min-width: 0;
+  max-width: 100%;
+}
+.js .source-markdown:not(.show-source) .markdown-source {
+  display: none;
+}
+.js .source-markdown:not(.show-source) .markdown-preview {
+  display: block;
+}
+.js .source-markdown.show-source .markdown-source {
+  display: block;
+}
+.js .source-markdown.show-source .markdown-preview {
+  display: none;
+}
+.markdown-preview h1,
+.markdown-preview h2,
+.markdown-preview h3,
+.markdown-preview h4,
+.markdown-preview h5,
+.markdown-preview h6 {
+  color: #222;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 1.1em 0 0.4em;
+}
+.markdown-preview h1 { font-size: 1.7em; }
+.markdown-preview h2 { font-size: 1.4em; }
+.markdown-preview h3 { font-size: 1.2em; }
+.markdown-preview p {
+  margin: 0.6em 0;
+}
+.markdown-preview ul,
+.markdown-preview ol {
+  margin: 0.4em 0 0.8em;
+  padding-left: 1.4em;
+}
+.markdown-preview li {
+  margin: 0.2em 0;
+}
+.markdown-preview li.task-list-item {
+  list-style: none;
+}
+.markdown-preview blockquote {
+  margin: 0.8em 0;
+  padding: 0 0 0 0.9em;
+  border-left: 3px solid #ccc;
+  color: #444;
+}
+.markdown-preview a[href] {
+  color: #1d4e89;
+  text-decoration: underline;
+}
+.markdown-preview a[href]:hover {
+  color: #163a66;
+}
+.markdown-preview :not(pre) > code {
+  font-family: 'Ubuntu Mono', monospace;
+  background: #f4f4f4;
+  padding: 0.05em 0.3em;
+  border-radius: 0.2em;
+}
+.markdown-preview pre {
+  margin: 0.8em 0;
+  padding: 0.8em 1em;
+  min-height: 0;
+  max-width: 100%;
+  background: #f6f6f6;
+  color: #222;
+  overflow: auto;
+  white-space: pre;
+  overflow-wrap: normal;
+  border-radius: 0.2em;
+}
+.markdown-preview pre code {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+}
+.markdown-preview th,
+.markdown-preview td {
+  height: auto;
+  padding: 0.35em 0.7em;
+  border: 1px solid #ccc;
+  text-align: left;
+  vertical-align: top;
+}
+.markdown-preview th {
+  background: #f6f6f6;
+}
+.markdown-preview img {
+  max-width: 100%;
+  height: auto;
+}
+.markdown-preview hr {
+  border: 0;
+  border-top: 1px solid #ddd;
+  margin: 1.2em 0;
+}
+.markdown-preview del {
+  color: #666;
+}
