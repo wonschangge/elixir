@@ -627,7 +627,12 @@ def main():
         else:
             text = src.replace('\n', '\001')
     out = text.encode('utf-8', errors='surrogateescape')
-    if not out.endswith(b'\n'):
+    # Defs mode with nothing to report must emit zero bytes. A lone
+    # newline becomes one empty field in scriptLines, and update.py
+    # then dies unpacking it into (ident, type, line). Tokenize mode
+    # still always ends with a newline so the indexer can drop the
+    # trailing empty piece. Non-empty defs already include one.
+    if (out or not defs_mode) and not out.endswith(b'\n'):
         out += b'\n'
     sys.stdout.buffer.write(out)
 
