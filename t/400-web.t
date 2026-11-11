@@ -48,6 +48,7 @@ http_request_ok 'index query', $tenv, '/testproj/v5.4/source',
         qr{href="/testproj/v5\.4/source/\.github"},
         qr{<option value="P"}, qr{Python},
         qr{<option value="T"}, qr{TypeScript/JavaScript},
+        qr{<option value="J"}, qr{Mojo},
         qr{href="/testproj/v5\.4/source/issue102\.c" data-commit-date="\d{4}-\d{2}-\d{2}"},
         qr{href="/testproj/v5\.4/source/arch" data-commit-date="\d{4}-\d{2}-\d{2}"},
         qr{href="/testproj/v5\.4/source/\.gitignore" data-commit-date="\d{4}-\d{2}-\d{2}"},
@@ -208,6 +209,57 @@ http_request_ok 'tsx source links tags but not JSX text', $tenv,
         qr{class="ident" href="/testproj/v5.4/T/ident/TsWidget"},
         qr{class="ident" href="/testproj/v5.4/T/ident/render"},
         qr{>ts_make_widget<},
+    ], 1;
+
+http_request_ok 'mojo ident query', $tenv, '/testproj/v5.4/J/ident/mojo_make_widget',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{mojo/mojo_widgets\.mojo},
+        qr{line 40},
+        qr{as a function},
+        qr{Defined in},
+        qr{mojo/mojo_consumer\.mojo},
+        qr{<option value="J"},
+        qr{\bMojo\b},
+    ], 1;
+
+http_request_ok 'mojo struct ident query', $tenv, '/testproj/v5.4/J/ident/MojoWidget',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{as a struct},
+        qr{line 19},
+        qr{Referenced in},
+    ], 1;
+
+http_request_ok 'mojo trait ident query', $tenv, '/testproj/v5.4/J/ident/MojoWidgetLike',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{as a trait},
+        qr{line 31},
+    ], 1;
+
+http_request_ok 'mojo ident is absent from the C family', $tenv,
+    '/testproj/v5.4/C/ident/mojo_make_widget',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{Unknown identifier 'mojo_make_widget'},
+    ], 1;
+
+http_request_ok 'mojo source links identifiers', $tenv,
+    '/testproj/v5.4/source/mojo/mojo_widgets.mojo',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{class="ident" href="/testproj/v5.4/J/ident/mojo_make_widget"},
+        qr{class="ident" href="/testproj/v5.4/J/ident/MojoWidget"},
+        qr{mojo_make_widget in a comment should not count},
+    ], 1;
+
+http_request_ok 'mojo fire-suffix ident query', $tenv, '/testproj/v5.4/J/ident/MojoSpark',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{as a struct},
+        qr{line 3},
+        qr{mojo/spark},
     ], 1;
 
 # Image blobs are previewed, not highlighted. SVG markup must stay out of

@@ -392,6 +392,7 @@ TOPBAR_FAMILIES = {
     'B': 'DT compatible',
     'P': 'Python',
     'T': 'TypeScript/JavaScript',
+    'J': 'Mojo',
 }
 
 # Returns a list of names of top-level directories in basedir

@@ -379,4 +379,176 @@ run_produces_ok('tsx file query skips JSX text and links tags',
     ],
     MUST_SUCCEED);
 
+# Mojo family: fn/def, struct, trait, alias, comptime, struct fields.
+# Comments, strings, docstrings, and keywords are not references.
+# Function-local var/comptime and names inside backtick MLIR literals
+# are not definitions.
+
+run_produces_ok('mojo ident query (function)',
+    [$query_py, qw(ident v5.4 mojo_make_widget J)],
+    [qr{^Symbol Definitions:}, qr{^Symbol References:},
+        { def => qr{mojo/mojo_widgets\.mojo.+\b40\b.+\bfunction\b} },
+        { ref => qr{mojo/mojo_widgets\.mojo.+\b46\b} },
+        { ref => qr{mojo/mojo_widgets\.mojo.+\b47\b} },
+        { ref => qr{mojo/mojo_consumer\.mojo.+\b3\b} },
+        { ref => qr{mojo/mojo_consumer\.mojo.+\b6\b} },
+        { ref => { not => qr{mojo_widgets\.mojo.+\b1\b} } },
+        { ref => { not => qr{mojo_widgets\.mojo.+\b7\b} } },
+        { ref => { not => qr{mojo_widgets\.mojo.+\b36\b} } },
+        { ref => { not => qr{mojo_widgets\.mojo.+\b40\b} } },
+        { ref => { not => qr{mojo_widgets\.mojo.+\b41\b} } },
+        { ref => { not => qr{mojo_widgets\.mojo.+\b42\b} } },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('mojo ident query (struct, trait, alias, comptime, fn)',
+    [$query_py, qw(ident v5.4 MojoWidget J)],
+    [
+        { def => qr{mojo/mojo_widgets\.mojo.+\b19\b.+\bstruct\b} },
+        { ref => qr{mojo/mojo_widgets\.mojo.+\b38\b} },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('mojo ident query (trait)',
+    [$query_py, qw(ident v5.4 MojoWidgetLike J)],
+    [
+        { def => qr{mojo/mojo_widgets\.mojo.+\b31\b.+\btrait\b} },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('mojo ident query (alias)',
+    [$query_py, qw(ident v5.4 MojoLabel J)],
+    [
+        { def => qr{mojo/mojo_widgets\.mojo.+\b14\b.+\balias\b} },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('mojo ident query (comptime)',
+    [$query_py, qw(ident v5.4 MOJO_WIDGET_LIMIT J)],
+    [
+        { def => qr{mojo/mojo_widgets\.mojo.+\b12\b.+\bcomptime\b} },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('mojo ident query (comptime after backtick literal)',
+    [$query_py, qw(ident v5.4 MojoNever J)],
+    [
+        { def => qr{mojo/mojo_widgets\.mojo.+\b16\b.+\bcomptime\b} },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('mojo ident query (method and field)',
+    [$query_py, qw(ident v5.4 render J)],
+    [
+        { def => qr{mojo/mojo_widgets\.mojo.+\b27\b.+\bmethod\b} },
+        { ref => qr{mojo/mojo_widgets\.mojo.+\b48\b} },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('mojo ident query (struct field)',
+    [$query_py, qw(ident v5.4 label J)],
+    [
+        { def => qr{mojo/mojo_widgets\.mojo.+\b22\b.+\bmember\b} },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('mojo ident query (legacy fn)',
+    [$query_py, qw(ident v5.4 mojo_legacy_widget J)],
+    [
+        { def => qr{mojo/mojo_widgets\.mojo.+\b35\b.+\bfunction\b} },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('mojo fire-suffix struct',
+    [$query_py, qw(ident v5.4 MojoSpark J)],
+    [
+        { def => qr{mojo/spark.+\b3\b.+\bstruct\b} },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('mojo fire-suffix method',
+    [$query_py, qw(ident v5.4 mojo_spark J)],
+    [
+        { def => qr{mojo/spark.+\b6\b.+\bmethod\b} },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('mojo local var is not a definition',
+    [$query_py, qw(ident v5.4 mojo_local_only J)],
+    [
+        { def => { not => qr{\S} } },
+        { ref => { not => qr{\S} } },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('mojo docstring code is not a definition',
+    [$query_py, qw(ident v5.4 not_a_function J)],
+    [
+        { def => { not => qr{\S} } },
+        { ref => { not => qr{\S} } },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('mojo keyword is not a reference',
+    [$query_py, qw(ident v5.4 struct J)],
+    [
+        { def => { not => qr{\S} } },
+        { ref => { not => qr{\S} } },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('mojo ident is not a C symbol',
+    [$query_py, qw(ident v5.4 mojo_make_widget C)],
+    [
+        { def => { not => qr{\S} } },
+        { ref => { not => qr{\S} } },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('mojo ident is not a Python symbol',
+    [$query_py, qw(ident v5.4 mojo_make_widget P)],
+    [
+        { def => { not => qr{\S} } },
+        { ref => { not => qr{\S} } },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('python ident is not a Mojo symbol',
+    [$query_py, qw(ident v5.4 py_make_widget J)],
+    [
+        { def => { not => qr{\S} } },
+        { ref => { not => qr{\S} } },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('C ident is not a Mojo symbol',
+    [$query_py, qw(ident v5.4 i2c_acpi_notify J)],
+    [
+        { def => { not => qr{\S} } },
+        { ref => { not => qr{\S} } },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('mojo ident is visible in all-symbols search',
+    [$query_py, qw(ident v5.4 mojo_make_widget A)],
+    [
+        { def => qr{mojo/mojo_widgets\.mojo.+\bfunction\b} },
+    ],
+    MUST_SUCCEED);
+
+run_produces_ok('mojo file query keeps text and links real idents',
+    [$query_py, qw(file v5.4 /mojo/mojo_widgets.mojo)],
+    [
+        qr{Module docstring mentions mojo_make_widget},
+        qr{# mojo_make_widget in a comment should not count},
+        qr{"mojo_make_widget inside a string"},
+        qr{\x{1b}\[31mmojo_make_widget\x{1b}\[0m\("demo"\)},
+        qr{widget .\x{1b}\[31mmojo_make_widget\x{1b}\[0m\('tmpl'\)},
+        qr{\x{1b}\[31mMojoWidget\x{1b}\[0m},
+        { not => qr{# \x{1b}\[31mmojo_make_widget} },
+        { not => qr{"\x{1b}\[31mmojo_make_widget} },
+        { not => qr{mentions \x{1b}\[31mmojo_make_widget} },
+    ],
+    MUST_SUCCEED);
+
 done_testing;
