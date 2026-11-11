@@ -1,24 +1,46 @@
 /**
  * Render Markdown to HTML for the Elixir file view.
  *
- * The parse is the same grammar deepseek-harness uses for its UI
+ * The parse stays on the deepseek-harness UI grammar
  * (packages/client/ui-primitives/src/markdown/parse.ts at tag dsh-v0.2.2-rc.1):
  * mdast-util-from-markdown + micromark-extension-gfm + mdast-util-gfm, with
- * GFM `singleTilde: false` so `10~20` stays literal. DSH then walks the mdast
- * in React. Elixir is a Python app, so this compiles that same tree to HTML
- * (mdast-util-to-hast) and sanitizes it. Math, mermaid, and DSH-only syntax
- * extensions (CJK emphasis, Windows paths) are not part of this preview.
+ * GFM `singleTilde: false` so `10~20` stays literal. DSH walks that tree in
+ * React and shows raw HTML as text. Elixir compiles the same tree to HTML.
+ * A cmark-gfm swap is not required: micromark already emits html nodes, and
+ * GitHub's YAML metadata table is a blob-view feature, not a cmark-gfm
+ * feature, so a different parser would still need this pass.
+ *
+ * Raw HTML is parsed (hast-util-raw) and then sanitized with the GitHub-style
+ * hast-util-sanitize schema. Script, style, event handlers, and non-http(s)
+ * / mailto URLs cannot survive. YAML frontmatter at the start of a file is
+ * turned into the vertical key/value table GitHub's blob view shows.
+ * Math, mermaid, and DSH-only syntax extensions are not part of this preview.
  */
 
 import { fromMarkdown } from 'mdast-util-from-markdown'
 import { gfmFromMarkdown } from 'mdast-util-gfm'
 import { gfm } from 'micromark-extension-gfm'
+import { frontmatter } from 'micromark-extension-frontmatter'
+import { frontmatterFromMarkdown } from 'mdast-util-frontmatter'
 import { toHast } from 'mdast-util-to-hast'
 import { toHtml } from 'hast-util-to-html'
+import { raw } from 'hast-util-raw'
 import { defaultSchema, sanitize } from 'hast-util-sanitize'
+import { parse as parseYaml } from 'yaml'
 
 /** Same option DSH passes to micromark-extension-gfm. */
 const gfmOptions = { singleTilde: false }
+
+function markdownParseOptions(withFrontmatter) {
+  return {
+    extensions: withFrontmatter
+      ? [frontmatter('yaml'), gfm(gfmOptions)]
+      : [gfm(gfmOptions)],
+    mdastExtensions: withFrontmatter
+      ? [frontmatterFromMarkdown('yaml'), gfmFromMarkdown()]
+      : [gfmFromMarkdown()],
+  }
+}
 
 /** Prefix on every id inside the preview so Markdown cannot clobber page controls. */
 const ID_PREFIX = 'md-'
@@ -36,39 +58,177 @@ const IMAGE_PROTOCOLS = new Set(['http:', 'https:'])
 export function renderMarkdown(markdown, options = {}) {
   const sourceBase = stripTrailingSlash(options.sourceBase || '')
   const filePath = options.filePath || '/'
-  const text = typeof markdown === 'string' ? markdown : String(markdown ?? '')
+  let text = typeof markdown === 'string' ? markdown : String(markdown ?? '')
+  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1)
 
-  const tree = fromMarkdown(text, {
-    extensions: [gfm(gfmOptions)],
-    mdastExtensions: [gfmFromMarkdown()],
-  })
-  literalizeHtml(tree)
+  const tree = fromMarkdown(text, markdownParseOptions(true))
+  const metadata = takeFrontmatter(tree)
 
-  const hast = toHast(tree, { allowDangerousHtml: false })
-  if (!hast) return ''
+  const hast = toHast(tree, { allowDangerousHtml: true })
+  if (!hast || hast.type !== 'root') return ''
 
-  const headingIds = addHeadingIds(hast)
-  rewriteResources(hast, { sourceBase, filePath, headingIds })
+  let parsed
+  try {
+    parsed = raw(hast)
+  } catch {
+    parsed = hast
+    rawToText(parsed)
+  }
+  if (!parsed || parsed.type !== 'root') return ''
+  if (!parsed.children) parsed.children = []
 
-  const clean = sanitize(hast, previewSchema())
-  return toHtml(clean)
+  if (metadata) {
+    const table = frontmatterTable(metadata, new WeakSet())
+    if (table) parsed.children.unshift(table)
+  }
+
+  const headingIds = addHeadingIds(parsed)
+  rewriteResources(parsed, { sourceBase, filePath, headingIds })
+
+  const clean = sanitize(parsed, previewSchema())
+  // Never serialize leftover raw nodes as HTML. The sanitizer already drops
+  // them; this keeps a future schema change from becoming an XSS sink.
+  return toHtml(clean, { allowDangerousHtml: false })
 }
 
 /**
- * DSH renders raw HTML nodes as literal text (they never enter the DOM as
- * markup). HTML comments are author notes, not document text, so they are
- * dropped. Everything else is kept as escaped text.
- * @param {import('mdast').Root | import('mdast').Content} node
+ * YAML frontmatter is a GitHub blob-view feature: a vertical key/value table,
+ * one row per key (`th` + `td`), no header row. Invalid YAML must not throw.
+ * Unclosed fences are not frontmatter (micromark leaves them as Markdown).
+ * A value that parses but is not a mapping is put back so it still renders.
+ * @param {import('mdast').Root} tree
+ * @returns {Record<string, unknown> | null}
  */
-function literalizeHtml(node) {
+function takeFrontmatter(tree) {
+  const node = tree.children[0]
+  if (!node || node.type !== 'yaml') return null
+
+  const source = typeof node.value === 'string' ? node.value : ''
+  let data
+  try {
+    data = parseYaml(source, {
+      maxAliasCount: 100,
+      uniqueKeys: false,
+      version: '1.2',
+    })
+  } catch {
+    tree.children.splice(0, 1, { type: 'code', lang: 'yaml', value: source })
+    return null
+  }
+
+  if (data === null || data === undefined) {
+    tree.children.shift()
+    return null
+  }
+
+  if (!isMapping(data)) {
+    const fragment = fromMarkdown(
+      `---\n${source}\n---\n`,
+      markdownParseOptions(false),
+    )
+    tree.children.splice(0, 1, ...fragment.children)
+    return null
+  }
+
+  tree.children.shift()
+  return data
+}
+
+function isMapping(value) {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+  if (value instanceof Date) return false
+  const proto = Object.getPrototypeOf(value)
+  return proto === Object.prototype || proto === null
+}
+
+/**
+ * @param {Record<string, unknown>} data
+ * @param {WeakSet<object>} seen
+ */
+function frontmatterTable(data, seen) {
+  if (!isMapping(data) || seen.has(data)) return null
+  seen.add(data)
+  const entries = Object.entries(data)
+  if (entries.length === 0) return null
+  return {
+    type: 'element',
+    tagName: 'table',
+    properties: {},
+    children: [{
+      type: 'element',
+      tagName: 'tbody',
+      properties: {},
+      children: entries.map(([key, value]) => ({
+        type: 'element',
+        tagName: 'tr',
+        properties: {},
+        children: [
+          {
+            type: 'element',
+            tagName: 'th',
+            properties: {},
+            children: [{ type: 'text', value: String(key) }],
+          },
+          {
+            type: 'element',
+            tagName: 'td',
+            properties: {},
+            children: valueChildren(value, seen),
+          },
+        ],
+      })),
+    }],
+  }
+}
+
+function valueChildren(value, seen) {
+  if (value === null || value === undefined) return [{ type: 'text', value: '' }]
+  const kind = typeof value
+  if (kind === 'string' || kind === 'number' || kind === 'boolean' || kind === 'bigint') {
+    return textWithBreaks(value)
+  }
+  if (value instanceof Date) return [{ type: 'text', value: value.toISOString() }]
+  if (typeof value !== 'object') return [{ type: 'text', value: '' }]
+  if (seen.has(value)) return [{ type: 'text', value: '' }]
+
+  if (isMapping(value)) {
+    const nested = frontmatterTable(value, seen)
+    return nested ? [nested] : [{ type: 'text', value: '' }]
+  }
+
+  seen.add(value)
+  if (Array.isArray(value) && value.every(item => (
+    item === null || item === undefined ||
+    ['string', 'number', 'boolean', 'bigint'].includes(typeof item)
+  ))) {
+    return textWithBreaks(value.map(item => (item == null ? '' : String(item))).join(', '))
+  }
+  try {
+    return [{ type: 'text', value: JSON.stringify(value) }]
+  } catch {
+    return [{ type: 'text', value: '' }]
+  }
+}
+
+function textWithBreaks(value) {
+  const text = String(value)
+  const lines = text.split(/\r?\n/)
+  if (lines.length === 1) return [{ type: 'text', value: text }]
+  /** @type {Array<import('hast').ElementContent>} */
+  const children = []
+  for (let i = 0; i < lines.length; i++) {
+    if (i > 0) children.push({ type: 'element', tagName: 'br', properties: {}, children: [] })
+    if (lines[i]) children.push({ type: 'text', value: lines[i] })
+  }
+  return children.length ? children : [{ type: 'text', value: '' }]
+}
+
+/** If the HTML parser throws, keep the source as escaped text instead of raw markup. */
+function rawToText(node) {
   if (!node || !node.children) return
   node.children = node.children.flatMap(child => {
-    if (child.type === 'html') {
-      const value = child.value || ''
-      if (/^\s*<!--[\s\S]*-->\s*$/.test(value)) return []
-      return [{ type: 'text', value }]
-    }
-    literalizeHtml(child)
+    if (child && child.type === 'raw') return [{ type: 'text', value: child.value || '' }]
+    rawToText(child)
     return [child]
   })
 }
@@ -267,10 +427,14 @@ function previewSchema() {
     ? defaultSchema.tagNames
     : [...defaultSchema.tagNames, 'input']
 
+  const strip = [...(defaultSchema.strip || [])]
+  if (!strip.includes('style')) strip.push('style')
+
   cachedSchema = {
     ...defaultSchema,
     tagNames,
     attributes,
+    strip,
     // Ids are already prefixed with md-. An extra prefix would break in-page links.
     clobberPrefix: '',
     protocols: {
