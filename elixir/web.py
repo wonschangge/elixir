@@ -500,6 +500,14 @@ def image_media_type(path: str) -> str|None:
     _root, ext = os.path.splitext(path)
     return IMAGE_MEDIA_TYPES.get(ext.lower())
 
+# Extensions shown as a rendered Markdown preview. Pygments already treats
+# these as Markdown; other blobs stay on the highlighted source view.
+MARKDOWN_EXTENSIONS = {'.md', '.markdown'}
+
+def is_markdown_path(path: str) -> bool:
+    _root, ext = os.path.splitext(path)
+    return ext.lower() in MARKDOWN_EXTENSIONS
+
 # Generate raw source response
 def generate_raw_source(resp, query, project, version, path):
     type = query.get_file_type(version, path)
@@ -685,6 +693,11 @@ def generate_source_page(ctx: RequestContext, q: Query,
                 'code': generate_source(q, project, version, path),
                 'path': path,
             }
+            # The highlighted block stays available for "Original source".
+            # The preview text is the git blob, not the identifier-filtered copy.
+            if is_markdown_path(path):
+                template_ctx['markdown'] = True
+                template_ctx['markdown_text'] = q.get_file_raw(version, path)
         template = ctx.jinja_env.get_template('source.html')
     else:
         raise ElixirProjectError('File not found', 'This file does not exist.',

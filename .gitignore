@@ -1,5 +1,6 @@
 # Generated files
 __pycache__
+node_modules/
 tags
 /.cache/
 .idea/

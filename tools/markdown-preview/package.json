@@ -1,0 +1,21 @@
+{
+  "name": "elixir-markdown-preview",
+  "private": true,
+  "type": "module",
+  "description": "Browser Markdown preview for Elixir file views. Parser lineage matches deepseek-harness UI (micromark / mdast / GFM).",
+  "scripts": {
+    "build": "esbuild entry.mjs --bundle --format=iife --target=es2018 --outfile=../../static/markdown-preview.js --minify --legal-comments=none --banner:js=\"/*! Elixir Markdown preview. Parser: mdast-util-from-markdown + mdast-util-gfm + micromark-extension-gfm (GFM, singleTilde:false), same family as deepseek-harness dsh-v0.2.2-rc.1 UI. MIT. */\"",
+    "test": "node --test render.test.mjs"
+  },
+  "dependencies": {
+    "hast-util-sanitize": "5.0.2",
+    "hast-util-to-html": "9.0.6",
+    "mdast-util-from-markdown": "2.1.0",
+    "mdast-util-gfm": "3.1.0",
+    "mdast-util-to-hast": "13.2.1",
+    "micromark-extension-gfm": "3.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

@@ -57,7 +57,9 @@ http_request_ok 'index query', $tenv, '/testproj/v5.4/source',
         { not => qr{^\s*\.\s*$}m },
         { not => qr{^\s*\.\.\s*$}m },
         { not => qr{/source/\.git(?:/|")} },
-        { not => qr{Parent directory} } ], 1;
+        { not => qr{Parent directory} },
+        { not => qr{id="wrap-lines"} },
+        { not => qr{id="markdown-original"} } ], 1;
 
 # Hidden directories and files that exist in the tree use the same URLs
 # as ordinary paths.
@@ -232,6 +234,8 @@ foreach my $path (sort keys %image_types) {
             qr{download="\Q$name\E"},
             { not => qr{highlighttable} },
             { not => qr{alert\('xss'\)} },
+            { not => qr{id="wrap-lines"} },
+            { not => qr{id="markdown-original"} },
         ];
 
     http_request_ok "image raw $name", $tenv,
@@ -251,5 +255,51 @@ http_request_ok 'png raw keeps the image bytes', $tenv,
 http_request_ok 'svg raw still serves the file itself', $tenv,
     '/testproj/v5.4/source/images/badge.svg?raw',
     [ qr{<svg xmlns="http://www.w3.org/2000/svg"}, qr{alert\('xss'\)} ];
+
+http_request_ok 'source view offers line wrap and not markdown', $tenv,
+    '/testproj/v5.4/source/issue102.c',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{id="wrap-lines"},
+        qr{Wrap lines},
+        qr{class="ident"},
+        { not => qr{id="markdown-original"} },
+        { not => qr{markdown-preview\.js} },
+        { not => qr{id="markdown-preview"} },
+    ], 1;
+
+http_request_ok 'markdown file previews by default', $tenv,
+    '/testproj/v5.4/source/README.md',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{id="wrap-lines"},
+        qr{Wrap lines},
+        qr{id="markdown-original"},
+        qr{Original source},
+        qr{id="markdown-view"},
+        qr{data-source-base="/testproj/v5\.4/source"},
+        qr{data-file-path="/README\.md"},
+        qr{id="markdown-preview"},
+        qr{id="markdown-source-data"},
+        qr{/static/markdown-preview\.js\?v=1},
+        qr{Elixir notes},
+        qr{docs/note\.markdown},
+        # Unchecked: rendered preview is the default. The box is not checked.
+        { not => qr{id="markdown-original"[^>]*\bchecked\b} },
+        { not => qr{<script>alert\('xss-md'\)} },
+        { not => qr{</script><script>} },
+    ], 1;
+
+http_request_ok 'markdown extension uses the same preview', $tenv,
+    '/testproj/v5.4/source/docs/note.markdown',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{id="markdown-original"},
+        qr{Original source},
+        qr{data-file-path="/docs/note\.markdown"},
+        qr{/static/markdown-preview\.js\?v=1},
+        qr{Back to},
+        { not => qr{<script>alert} },
+    ], 1;
 
 done_testing;

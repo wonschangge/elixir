@@ -372,6 +372,125 @@ async function cycleBannerWithData(data, delay=500) {
   console.log("cycle finished");
 }
 
+// Optional line wrapping for the highlighted file view. Default stays
+// unwrapped (horizontal scroll). Line-number anchors are stretched to the
+// wrapped code line so the two columns stay aligned.
+function setupWrapLines() {
+  const toggle = document.getElementById('wrap-lines');
+  if (toggle === null) {
+    return;
+  }
+
+  toggle.checked = document.documentElement.classList.contains('wrap-lines');
+
+  const apply = () => {
+    const on = toggle.checked;
+    document.documentElement.classList.toggle('wrap-lines', on);
+    try {
+      window.localStorage.setItem('wrap-lines', on ? 'true' : 'false');
+    } catch (e) {}
+    scheduleLineNumberSync();
+  };
+
+  toggle.addEventListener('change', apply);
+
+  const codeCell = document.querySelector('.lxrcode td.code');
+  if (codeCell !== null && typeof ResizeObserver === 'function') {
+    const observer = new ResizeObserver(() => scheduleLineNumberSync());
+    observer.observe(codeCell);
+  }
+  window.addEventListener('resize', scheduleLineNumberSync);
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(scheduleLineNumberSync);
+  }
+  scheduleLineNumberSync();
+}
+
+function scheduleLineNumberSync() {
+  window.requestAnimationFrame(syncWrappedLineNumbers);
+}
+
+function syncWrappedLineNumbers() {
+  const anchors = document.querySelectorAll('.linenodiv a[id^="L"]');
+  if (!document.documentElement.classList.contains('wrap-lines')) {
+    for (const anchor of anchors) {
+      anchor.style.height = '';
+    }
+    return;
+  }
+
+  // A hidden original-source block reports 0 height and would collapse numbers.
+  const source = document.getElementById('markdown-source');
+  if (source !== null && source.offsetParent === null) {
+    return;
+  }
+
+  for (const anchor of anchors) {
+    const line = document.getElementById(`codeline-${ anchor.id.substring(1) }`);
+    if (line === null) {
+      continue;
+    }
+    const height = line.offsetHeight;
+    anchor.style.height = height > 0 ? `${ height }px` : '';
+  }
+}
+
+// Markdown files render a preview by default. "Original source" reveals the
+// existing highlighted blob. Failure leaves that source visible.
+function setupMarkdownPreview() {
+  const view = document.getElementById('markdown-view');
+  const toggle = document.getElementById('markdown-original');
+  const preview = document.getElementById('markdown-preview');
+  const dataEl = document.getElementById('markdown-source-data');
+  if (view === null || toggle === null || preview === null || dataEl === null) {
+    return;
+  }
+  if (!window.ElixirMarkdown || typeof window.ElixirMarkdown.render !== 'function') {
+    showMarkdownSource(view, toggle);
+    return;
+  }
+
+  let text;
+  try {
+    text = JSON.parse(dataEl.textContent || '""');
+  } catch (e) {
+    showMarkdownSource(view, toggle);
+    return;
+  }
+
+  try {
+    preview.innerHTML = window.ElixirMarkdown.render(text, {
+      sourceBase: view.dataset.sourceBase || '',
+      filePath: view.dataset.filePath || '',
+    });
+  } catch (e) {
+    showMarkdownSource(view, toggle);
+    return;
+  }
+
+  view.classList.add('markdown-ready');
+  toggle.addEventListener('change', () => {
+    view.classList.toggle('show-source', toggle.checked);
+    scheduleLineNumberSync();
+  });
+}
+
+function showMarkdownSource(view, toggle) {
+  toggle.checked = true;
+  view.classList.add('show-source');
+}
+
+function setupFileView() {
+  setupMarkdownPreview();
+  setupWrapLines();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', setupFileView);
+} else {
+  setupFileView();
+}
+
 document.addEventListener('DOMContentLoaded', _ => {
   updateMessageBanner();
 
