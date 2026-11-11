@@ -247,6 +247,12 @@ class UpdateDefs(Thread):
 
             with defs_lock:
                 for l in lines:
+                    # A definition-less blob can show up as a blank field
+                    # (tokenize-mojo.py --defs used to print a lone newline).
+                    # Skip it. Real "name kind line" records are unchanged,
+                    # including for families that do not use that script.
+                    if not l.strip():
+                        continue
                     ident, type, line = l.split(b' ')
                     type = type.decode()
                     line = int(line.decode())

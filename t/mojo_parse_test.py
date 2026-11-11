@@ -5,6 +5,7 @@
 
 import importlib.util
 import os
+import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -147,7 +148,92 @@ def main():
         except Exception as exc:
             check(False, f'raised on {blob!r}: {exc}')
 
+    # Empty files, and files that only have comments or top-level
+    # statements, have no definitions. --defs must print nothing: a
+    # lone newline is one empty field after scriptLines splits, and
+    # update.py cannot unpack that into three columns. Normal tokenize
+    # mode keeps the historical trailing newline.
+    empty_mojo = b''
+    no_defs_mojo = '''\
+# comment only, not a definition
+"""docstring
+def not_a_def():
+    var fake_field: Int
+"""
+
+from helpers import imported_name
+
+print(imported_name)
+bare = 1 + 2
+if bare:
+    also = bare
+'''.encode('utf-8')
+
+    check(mod.parse_defs(no_defs_mojo.decode('utf-8')) == [],
+          'comment and statement .mojo parsed as having definitions')
+    check_defs_cli(check, empty_mojo, 'empty .mojo')
+    check_tokenize_cli(check, empty_mojo, 'empty .mojo')
+    check_defs_cli(check, no_defs_mojo, 'comment and statement .mojo')
+    check_tokenize_cli(check, no_defs_mojo, 'comment and statement .mojo')
+
+    kept = 'def kept():\n    pass\n'.encode('utf-8')
+    status, out, err = run_cli(kept, defs=True)
+    check(status == 0 and err == b'' and out == b'kept function 1\n',
+          f'defs with a real function: {status} {out!r} {err!r}')
+    fields = indexer_lines(out)
+    check(len(fields) == 1 and fields[0].split(b' ') == [b'kept', b'function', b'1'],
+          f'defs line is three fields: {fields!r}')
+
     sys.exit(failed)
+
+
+def run_cli(src, defs=False):
+    cmd = [sys.executable, os.path.join(ROOT, 'tokenize-mojo.py')]
+    if defs:
+        cmd.append('--defs')
+    proc = subprocess.run(
+        cmd, input=src, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    return proc.returncode, proc.stdout, proc.stderr
+
+
+def indexer_lines(blob):
+    """Split the way elixir.lib.scriptLines does."""
+    parts = blob.split(b'\n')
+    del parts[-1]
+    return parts
+
+
+def check_defs_cli(check, src, label):
+    status, out, err = run_cli(src, defs=True)
+    lines = indexer_lines(out) if status == 0 else None
+    check(status == 0 and err == b'' and out == b'' and lines == [],
+          f'{label} --defs should be empty, got status={status} '
+          f'out={out!r} err={err!r} lines={lines!r}')
+
+
+def check_tokenize_cli(check, src, label):
+    status, out, err = run_cli(src, defs=False)
+    text = mod.tokenize_source(src.decode('utf-8'))
+    expect = text.encode('utf-8')
+    if not expect.endswith(b'\n'):
+        expect += b'\n'
+    same = status == 0 and err == b'' and out == expect
+    check(same,
+          f'{label} tokenize bytes differ: status={status} '
+          f'out={out!r} expect={expect!r} err={err!r}')
+    if not same:
+        return
+    # The stream the indexer keeps must rebuild the original file.
+    parts = out.decode('utf-8').split('\n')
+    del parts[-1]
+    rebuilt = []
+    for index, part in enumerate(parts):
+        if index % 2 == 0:
+            rebuilt.append(part.replace('\001', '\n'))
+        else:
+            rebuilt.append(part)
+    check(''.join(rebuilt) == src.decode('utf-8'),
+          f'{label} tokenize did not round-trip')
 
 
 if __name__ == '__main__':
