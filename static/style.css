@@ -1834,6 +1834,20 @@ html.wrap-lines .lxrcode .linenodiv pre a {
 .markdown-preview th {
   background: #f6f6f6;
 }
+/* The default left alignment would hide the HTML align attribute (GFM
+   columns and raw tables such as centered QR codes). */
+.markdown-preview th[align="left"],
+.markdown-preview td[align="left"] {
+  text-align: left;
+}
+.markdown-preview th[align="center"],
+.markdown-preview td[align="center"] {
+  text-align: center;
+}
+.markdown-preview th[align="right"],
+.markdown-preview td[align="right"] {
+  text-align: right;
+}
 .markdown-preview img {
   max-width: 100%;
   height: auto;

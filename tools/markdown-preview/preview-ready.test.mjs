@@ -208,6 +208,17 @@ test('a render failure reveals the source and checks Original source', () => {
   assert.equal(shown.preview, 'none')
 })
 
+test('cell align attributes override the default left alignment', () => {
+  assert.match(
+    css,
+    /\.markdown-preview td\[align="center"\][\s\S]*?text-align:\s*center/,
+  )
+  assert.match(
+    css,
+    /\.markdown-preview th\[align="right"\][\s\S]*?text-align:\s*right/,
+  )
+})
+
 test('a missing renderer reveals the source and checks Original source', () => {
   const { nodes } = bootPreview({ omitRenderer: true })
   assert.equal(nodes['markdown-view'].classList.contains('show-source'), true)
