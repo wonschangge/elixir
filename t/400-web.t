@@ -122,7 +122,12 @@ http_request_ok 'hidden file in an ordinary directory', $tenv,
 http_request_ok 'identifier query', $tenv, '/testproj/v5.4/ident/gsb_buffer',
     [ qr{^Content-Type:\s*text/html}, qr{\bgsb_buffer\b},
         qr{source/drivers/i2c/i2c-core-acpi\.c#L23},
-        qr{as a struct} ], 1;
+        qr{as a struct},
+        qr{id="night-mode"},
+        qr{class="sidebar-night"},
+        qr{Night mode},
+        { not => qr{class="poweredby"} },
+        { not => qr{powered by} } ], 1;
 
 # Doc comments: testcases pulled from t/300
 http_request_ok 'doc-comment query (nonexistent)', $tenv,
@@ -433,9 +438,14 @@ http_request_ok 'source view offers line wrap and not markdown', $tenv,
         qr{id="wrap-lines"},
         qr{Wrap lines},
         qr{class="ident"},
+        qr{id="night-mode"},
+        qr{role="switch"},
+        qr{class="footer"},
         { not => qr{id="markdown-original"} },
         { not => qr{markdown-preview\.js} },
         { not => qr{id="markdown-preview"} },
+        { not => qr{class="poweredby"} },
+        { not => qr{powered by} },
     ], 1;
 
 http_request_ok 'markdown file previews by default', $tenv,
@@ -452,8 +462,8 @@ http_request_ok 'markdown file previews by default', $tenv,
         qr{id="markdown-preview"},
         qr{id="markdown-source-data"},
         qr{/static/markdown-preview\.js\?v=2},
-        qr{/static/style\.css\?v=20},
-        qr{/static/script\.js\?v=19},
+        qr{/static/style\.css\?v=21},
+        qr{/static/script\.js\?v=20},
         qr{Elixir notes},
         qr{docs/note\.markdown},
         # Unchecked: rendered preview is the default. The box is not checked.
@@ -498,6 +508,96 @@ http_request_ok 'markdown extension uses the same preview', $tenv,
         qr{/static/markdown-preview\.js\?v=2},
         qr{Back to},
         { not => qr{<script>alert} },
+        { not => qr{powered by} },
     ], 1;
+
+# Footer credit is gone on every page that uses the layout. The night-mode
+# switch is part of the sidebar, and the theme class is chosen before CSS.
+http_request_ok 'directory page has night mode and no elixir credit', $tenv,
+    '/testproj/v5.4/source',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{id="night-mode"},
+        qr{for="night-mode"},
+        qr{role="switch"},
+        qr{class="sidebar-night"},
+        qr{Night mode},
+        qr{getItem\('night-mode'\)},
+        qr{prefers-color-scheme: dark},
+        qr{/static/style\.css\?v=21},
+        qr{/static/script\.js\?v=20},
+        qr{class="footer"},
+        qr{class="header"},
+        { not => qr{class="poweredby"} },
+        { not => qr{powered by} },
+    ], 1;
+
+{
+    open my $layout_fh, '<', "$Bin/../templates/layout.html" or die $!;
+    local $/;
+    my $layout = <$layout_fh>;
+    close $layout_fh;
+    unlike $layout, qr/poweredby|powered by/i, 'layout has no elixir credit';
+    like $layout, qr/include 'header\.html'/, 'Bootlin header include stays';
+    like $layout,
+        qr/<footer class="footer">[\s\S]*class="go-top[\s\S]*<\/footer>/,
+        'footer container stays for version and page actions';
+    like $layout,
+        qr/getItem\('night-mode'\)[\s\S]*?\/static\/style\.css\?v=21/,
+        'night class is set before the stylesheet';
+    like $layout,
+        qr/stored === 'true' \|\| \(stored !== 'false' && prefersDark\)/,
+        'a stored night-mode value overrides prefers-color-scheme';
+    like $layout, qr/script\.js\?v=20/, 'script cache buster bumped';
+
+    open my $side_fh, '<', "$Bin/../templates/sidebar.html" or die $!;
+    my $sidebar = <$side_fh>;
+    close $side_fh;
+    like $sidebar,
+        qr/<aside class="sidebar" id="menu">[\s\S]*class="filter-results"[\s\S]*class="sidebar-night"[\s\S]*<label class="night-mode" for="night-mode">[\s\S]*id="night-mode"[\s\S]*Night mode[\s\S]*<\/aside>/,
+        'night mode control is at the bottom of the sidebar';
+    like $sidebar, qr/type="checkbox"/, 'night mode control is a keyboard checkbox';
+    like $sidebar, qr/role="switch"/, 'night mode control is a switch';
+
+    open my $js_fh, '<', "$Bin/../static/script.js" or die $!;
+    my $js = <$js_fh>;
+    close $js_fh;
+    like $js,
+        qr/localStorage\.setItem\('night-mode', on \? 'true' : 'false'\)/,
+        'night mode is stored in localStorage';
+    like $js,
+        qr/if \(stored === 'true' \|\| stored === 'false'\) \{\s*return;\s*\}/,
+        'a stored choice ignores later prefers-color-scheme changes';
+    like $js, qr/getElementById\('night-mode'\)/, 'script binds the sidebar control';
+
+    open my $css_fh, '<', "$Bin/../static/style.css" or die $!;
+    my $css = <$css_fh>;
+    close $css_fh;
+    unlike $css, qr/\.poweredby/, 'powered-by style removed';
+    like $css,
+        qr/html\.night body \{\s*background:\s*#0d1117;\s*color:\s*#c9d1d9;\s*\}/,
+        'night page background and text';
+    like $css,
+        qr/html\.night \.highlight \.code \{\s*background:\s*#0d1117;\s*\}/,
+        'night code background';
+    like $css,
+        qr/html\.night \.highlight \.code pre \{\s*color:\s*#e6edf3;\s*\}/,
+        'night code text';
+    like $css,
+        qr/html\.night span\[id\^='codeline-'\]\.line-highlight,[\s\S]*?background:\s*#3a3416;/,
+        'night current line stays dark';
+    like $css,
+        qr/html\.night \.lxrident a strong \{\s*color:\s*#e6edf3;\s*\}/,
+        'night ident paths stay light';
+    like $css,
+        qr/html\.night \.lxrtree tr:hover \{\s*background:\s*#21262d;\s*\}/,
+        'night directory hover stays dark';
+    like $css,
+        qr/html\.night \.markdown-preview \{\s*color:\s*#c9d1d9;\s*\}/,
+        'night markdown text';
+    like $css,
+        qr/html\.night \.markdown-preview th,\s*html\.night \.markdown-preview td \{\s*border-color:\s*#30363d;\s*\}/,
+        'night markdown table borders';
+}
 
 done_testing;

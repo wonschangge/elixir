@@ -15,7 +15,21 @@
             Elixir Cross Referencer - Explore source code in your browser - Particularly useful for the Linux kernel and other low-level projects in C/C++ (bootloaders, C libraries...)
             {%- endblock %}">
         <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1" />
-        <link rel="stylesheet" href="/static/style.css?v=20">
+        <script>
+            // Before the stylesheet, so the first paint is already the right theme.
+            // A stored "true" or "false" overrides prefers-color-scheme.
+            (function () {
+                var stored = null;
+                try {
+                    stored = window.localStorage.getItem('night-mode');
+                } catch (e) {}
+                var prefersDark = window.matchMedia &&
+                    window.matchMedia('(prefers-color-scheme: dark)').matches;
+                var night = stored === 'true' || (stored !== 'false' && prefersDark);
+                document.documentElement.classList.toggle('night', night);
+            })();
+        </script>
+        <link rel="stylesheet" href="/static/style.css?v=21">
 
         <link rel="preload" href="/static/img/2penguins.svg" as="image" />
         <link rel="preload" href="/static/img/arrow-dropdown-16.svg" as="image" />
@@ -69,15 +83,10 @@
                 <a title="Go to top of the page" class="go-top icon-up screenreader" href="#">
                     Top
                 </a>
-                <span class="poweredby">powered by
-                    <a target="_blank" href="{{ elixir_repo_url }}">
-                        Elixir {{ elixir_version_string }}
-                    </a>
-                </span>
             </footer>
         </div>
         {% block extra_scripts %}{% endblock %}
-        <script src="/static/script.js?v=19"></script>
+        <script src="/static/script.js?v=20"></script>
         <script src="/static/dynamic-references.js?v=4"></script>
         <script src="/static/autocomplete.js" project="{{ current_project }}"></script>
     </body>

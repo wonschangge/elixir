@@ -51,4 +51,14 @@
 
         <div class="filter-results"></div>
     </nav>
+    <div class="sidebar-night">
+        <label class="night-mode" for="night-mode">
+            <input type="checkbox" id="night-mode" role="switch" autocomplete="off">
+            Night mode
+        </label>
+    </div>
+    <script>
+        document.getElementById('night-mode').checked =
+            document.documentElement.classList.contains('night');
+    </script>
 </aside>
