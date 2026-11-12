@@ -393,6 +393,9 @@ TOPBAR_FAMILIES = {
     'P': 'Python',
     'T': 'TypeScript/JavaScript',
     'J': 'Mojo',
+    'R': 'Rust',
+    'I': 'MLIR',
+    'G': 'TableGen',
 }
 
 # Returns a list of names of top-level directories in basedir

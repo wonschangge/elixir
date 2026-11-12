@@ -206,11 +206,11 @@ def currentProject():
     return os.path.basename(os.path.dirname(getDataDir()))
 
 # List all families supported by Elixir
-families = ['A', 'B', 'C', 'D', 'J', 'K', 'M', 'P', 'T']
+families = ['A', 'B', 'C', 'D', 'G', 'I', 'J', 'K', 'M', 'P', 'R', 'T']
 
 # Those families have databases that cache the content of definitions.db.
 # This allows faster lookup.
-CACHED_DEFINITIONS_FAMILIES = ['C', 'K', 'D', 'M', 'P', 'T', 'J']
+CACHED_DEFINITIONS_FAMILIES = ['C', 'K', 'D', 'M', 'P', 'T', 'J', 'R', 'I', 'G']
 
 def validFamily(family):
     return family in families
@@ -237,6 +237,21 @@ def getFileFamily(filename):
         # Before the Kconfig/Makefile name checks so that files such as
         # Kconfig.mojo stay in the Mojo family. .🔥 is Mojo's alternate suffix.
         return 'J' # Mojo
+    elif ext == '.rs':
+        # Before the Kconfig/Makefile name checks so that files such as
+        # Kconfig.rs stay in the Rust family. .rlib is a compiled crate,
+        # not source.
+        return 'R' # Rust
+    elif ext == '.mlir':
+        # Before the Kconfig/Makefile name checks so that files such as
+        # Kconfig.mlir stay in the MLIR family.
+        return 'I' # MLIR (L is unused; I is IR)
+    elif ext == '.td':
+        # Before the Kconfig/Makefile name checks so that files such as
+        # Kconfig.td stay in the TableGen family. .td.in is left alone:
+        # splitext() would see .in, and a second-suffix rule would also
+        # claim unrelated *.in files.
+        return 'G' # TableGen
     elif name[:7] == 'kconfig' and ext != '.rst':
         # Some files are named like Kconfig-nommu so we only check the first 7 letters
         # We also exclude documentation files that can be named kconfig
@@ -261,6 +276,12 @@ compatibility_list = {
     # Mojo identifiers are not interchangeable with the other families.
     # `M` is already Makefiles, so Mojo is `J`.
     'J' : ['J'],
+    # Rust, MLIR, and TableGen identifiers are not interchangeable with
+    # each other or with C/Python/TypeScript/Mojo. `L` is unused; MLIR is
+    # `I` (IR). TableGen is `G`.
+    'R' : ['R'],
+    'I' : ['I'],
+    'G' : ['G'],
 }
 
 # Check if families are compatible
