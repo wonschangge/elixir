@@ -144,6 +144,22 @@ tokenize_file()
         return
     fi
 
+    # MLIR @symbols, attribute aliases, and type aliases. SSA names are
+    # not tokens. See tokenize-mlir.py.
+    if [ "$opt3" = "I" ]; then
+        git cat-file blob "$ref" 2>/dev/null |
+        "$script_dir/tokenize-mlir.py"
+        return
+    fi
+
+    # TableGen comments, strings, code blocks, and keywords. See
+    # tokenize-tablegen.py.
+    if [ "$opt3" = "G" ]; then
+        git cat-file blob "$ref" 2>/dev/null |
+        "$script_dir/tokenize-tablegen.py"
+        return
+    fi
+
     # TypeScript and JavaScript comments, strings, templates, and regexes
     # are not C tokens. opt4 is the filename when the caller has one (the
     # -b form stores only a blob hash in opt2); otherwise opt2 is the path.
@@ -157,6 +173,9 @@ tokenize_file()
         return
     fi
 
+    # Rust (family R) uses this C tokenizer. // and /* */ comments and
+    # ordinary strings stay out of the identifier stream. ctags extracts
+    # definitions; see parse_defs_R.
     if [ $opt3 = "D" ]; then #Don't cut around '-' in devicetrees
         regex='s%((/\*.*?\*/|//.*?\001|[^'"'"']"(\\.|.)*?"|# *include *<.*?>|[^\w-])+)([\w-]+)?%\1\n\4\n%g'
     else
@@ -218,6 +237,15 @@ parse_defs()
     "J")
         parse_defs_J
         ;;
+    "R")
+        parse_defs_R
+        ;;
+    "I")
+        parse_defs_I
+        ;;
+    "G")
+        parse_defs_G
+        ;;
     esac
 }
 
@@ -270,6 +298,48 @@ parse_defs_J()
     # "name kind line" lines the other parsers print.
     git cat-file blob "$opt1" 2>/dev/null |
     "$script_dir/tokenize-mojo.py" --defs
+}
+
+parse_defs_R()
+{
+    tmp=`mktemp -d`
+    full_path=$tmp/$opt2
+    git cat-file blob "$opt1" > "$full_path"
+
+    # Stock Universal Ctags 5.9. The kind list (no + or -) drops the
+    # implementation kind: an impl block is not its own definition, and
+    # ctags names it after the type. interface is ctags' name for a trait.
+    # Locals and parameters are not Rust kinds. ctags 5.9 does not tag
+    # const items or unions; rust-item-defs.py appends those.
+    ctags -x --language-force=Rust --kinds-rust=MPefgimnstv "$full_path" |
+    awk '{
+        kind = $2
+        if (kind == "interface") kind = "trait"
+        print $1, kind, $3
+    }'
+
+    python3 "$script_dir/rust-item-defs.py" "$full_path"
+
+    rm "$full_path"
+    rmdir "$tmp"
+}
+
+parse_defs_I()
+{
+    # MLIR is not a Universal Ctags language. A regex cannot tell
+    # `tt.func @name` from `tt.call @name` or from an SSA name, so
+    # definitions come from tokenize-mlir.py.
+    git cat-file blob "$opt1" 2>/dev/null |
+    "$script_dir/tokenize-mlir.py" --defs
+}
+
+parse_defs_G()
+{
+    # TableGen is not a Universal Ctags language. `[{ }]` code blocks
+    # contain the letters `def` and `class`, so definitions come from
+    # tokenize-tablegen.py.
+    git cat-file blob "$opt1" 2>/dev/null |
+    "$script_dir/tokenize-tablegen.py" --defs
 }
 
 parse_defs_P()

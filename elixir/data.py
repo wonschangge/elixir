@@ -63,6 +63,14 @@ defTypeR = {
     # members reuse the TypeScript/Python letters. `R`/`Y` are Mojo-only.
     'R': 'trait',
     'Y': 'comptime',
+    # Rust ctags kind names that are not already stored above. Traits are
+    # remapped to `trait` in script.sh (ctags calls them interface).
+    'F': 'field',
+    'N': 'module',
+    # TableGen. `d` is already the C `define` kind.
+    'D': 'def',
+    'b': 'defm',
+    'W': 'multiclass',
 }
 
 defTypeD = {v: k for k, v in defTypeR.items()}
@@ -232,6 +240,9 @@ class DB:
         self.defs_cache['P'] = BsdDB(dir + '/definitions-cache-P.db', ro, NOOP, shared=shared)
         self.defs_cache['T'] = BsdDB(dir + '/definitions-cache-T.db', ro, NOOP, shared=shared)
         self.defs_cache['J'] = BsdDB(dir + '/definitions-cache-J.db', ro, NOOP, shared=shared)
+        self.defs_cache['R'] = BsdDB(dir + '/definitions-cache-R.db', ro, NOOP, shared=shared)
+        self.defs_cache['I'] = BsdDB(dir + '/definitions-cache-I.db', ro, NOOP, shared=shared)
+        self.defs_cache['G'] = BsdDB(dir + '/definitions-cache-G.db', ro, NOOP, shared=shared)
         assert sorted(self.defs_cache.keys()) == sorted(lib.CACHED_DEFINITIONS_FAMILIES)
         self.refs = BsdDB(dir + '/references.db', ro, RefList, shared=shared)
         self.docs = BsdDB(dir + '/doccomments.db', ro, RefList, shared=shared)
@@ -255,6 +266,9 @@ class DB:
         self.defs_cache['P'].close()
         self.defs_cache['T'].close()
         self.defs_cache['J'].close()
+        self.defs_cache['R'].close()
+        self.defs_cache['I'].close()
+        self.defs_cache['G'].close()
         self.refs.close()
         self.docs.close()
         if self.dtscomp:

@@ -1,5 +1,6 @@
 #!/usr/bin/env perl
-# 120-filefamily.t: getFileFamily() classifications, including Python, TypeScript, and Mojo.
+# 120-filefamily.t: getFileFamily() classifications, including Python,
+# TypeScript, Mojo, Rust, MLIR, and TableGen.
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -56,6 +57,23 @@ cases = {
     "Kconfig.mojo": "J",
     "spark.🔥": "J",
     "src/std/simd.🔥": "J",
+    "foo.rs": "R",
+    "FOO.RS": "R",
+    "src/pkg/lib.rs": "R",
+    "Makefile.rs": "R",
+    "Kconfig.rs": "R",
+    "foo.rlib": None,
+    "foo.mlir": "I",
+    "FOO.MLIR": "I",
+    "src/dialect/ops.mlir": "I",
+    "Makefile.mlir": "I",
+    "Kconfig.mlir": "I",
+    "foo.td": "G",
+    "FOO.TD": "G",
+    "include/Ops.td": "G",
+    "Makefile.td": "G",
+    "Kconfig.td": "G",
+    "foo.td.in": None,
     "foo.pyc": None,
     "foo.pyi": None,
     "README": None,

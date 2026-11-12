@@ -49,6 +49,12 @@ http_request_ok 'index query', $tenv, '/testproj/v5.4/source',
         qr{<option value="P"}, qr{Python},
         qr{<option value="T"}, qr{TypeScript/JavaScript},
         qr{<option value="J"}, qr{Mojo},
+        qr{<option value="R"}, qr{Rust},
+        qr{<option value="I"}, qr{MLIR},
+        qr{<option value="G"}, qr{TableGen},
+        qr{href="/testproj/v5.4/source/rust"},
+        qr{href="/testproj/v5.4/source/mlir"},
+        qr{href="/testproj/v5.4/source/tablegen"},
         qr{href="/testproj/v5\.4/source/issue102\.c" data-commit-date="\d{4}-\d{2}-\d{2}"},
         qr{href="/testproj/v5\.4/source/arch" data-commit-date="\d{4}-\d{2}-\d{2}"},
         qr{href="/testproj/v5\.4/source/\.gitignore" data-commit-date="\d{4}-\d{2}-\d{2}"},
@@ -260,6 +266,118 @@ http_request_ok 'mojo fire-suffix ident query', $tenv, '/testproj/v5.4/J/ident/M
         qr{as a struct},
         qr{line 3},
         qr{mojo/spark},
+    ], 1;
+
+http_request_ok 'rust ident query', $tenv, '/testproj/v5.4/R/ident/rust_make_widget',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{rust/rust_widgets\.rs},
+        qr{line 54},
+        qr{as a function},
+        qr{rust/rust_consumer\.rs},
+        qr{<option value="R"},
+        qr{\bRust\b},
+    ], 1;
+
+http_request_ok 'rust struct ident query', $tenv, '/testproj/v5.4/R/ident/RustWidget',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{as a struct},
+        qr{line 13},
+    ], 1;
+
+http_request_ok 'rust trait ident query', $tenv, '/testproj/v5.4/R/ident/RustWidgetLike',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{as a trait},
+        qr{line 8},
+    ], 1;
+
+http_request_ok 'rust ident is absent from the C family', $tenv,
+    '/testproj/v5.4/C/ident/rust_make_widget',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{Unknown identifier 'rust_make_widget'},
+    ], 1;
+
+http_request_ok 'rust source links identifiers', $tenv,
+    '/testproj/v5.4/source/rust/rust_widgets.rs',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{class="ident" href="/testproj/v5.4/R/ident/rust_make_widget"},
+        qr{class="ident" href="/testproj/v5.4/R/ident/RustWidget"},
+        qr{rust_make_widget in a comment should not count},
+    ], 1;
+
+http_request_ok 'mlir ident query', $tenv, '/testproj/v5.4/I/ident/add_kernel',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{mlir/add_kernel\.mlir},
+        qr{line 8},
+        qr{as a function},
+        qr{mlir/mlir_consumer\.mlir},
+        qr{<option value="I"},
+        qr{\bMLIR\b},
+    ], 1;
+
+http_request_ok 'mlir alias ident query', $tenv, '/testproj/v5.4/I/ident/BlockedLayout',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{as a alias},
+        qr{line 4},
+    ], 1;
+
+http_request_ok 'mlir ident is absent from the C family', $tenv,
+    '/testproj/v5.4/C/ident/add_kernel',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{Unknown identifier 'add_kernel'},
+    ], 1;
+
+http_request_ok 'mlir source links @symbols', $tenv,
+    '/testproj/v5.4/source/mlir/add_kernel.mlir',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{class="ident" href="/testproj/v5.4/I/ident/add_kernel"},
+        qr{class="ident" href="/testproj/v5.4/I/ident/BlockedLayout"},
+        qr{class="ident" href="/testproj/v5.4/I/ident/global_smem"},
+        qr{add_kernel in a comment should not count},
+        qr{add_kernel inside a string},
+    ], 1;
+
+http_request_ok 'tablegen ident query', $tenv, '/testproj/v5.4/G/ident/TT_IntToPtrOp',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{tablegen/ops\.td},
+        qr{line 11},
+        qr{as a def in},
+        qr{<option value="G"},
+        qr{\bTableGen\b},
+    ], 1;
+
+http_request_ok 'tablegen class ident query', $tenv, '/testproj/v5.4/G/ident/TT_Op',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{as a class},
+        qr{line 7},
+        qr{tablegen/td_consumer\.td},
+    ], 1;
+
+http_request_ok 'tablegen ident is absent from the C family', $tenv,
+    '/testproj/v5.4/C/ident/TT_IntToPtrOp',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{Unknown identifier 'TT_IntToPtrOp'},
+    ], 1;
+
+http_request_ok 'tablegen source links records', $tenv,
+    '/testproj/v5.4/source/tablegen/ops.td',
+    [
+        qr{^Content-Type:\s*text/html},
+        qr{class="ident" href="/testproj/v5.4/G/ident/TT_IntToPtrOp"},
+        qr{class="ident" href="/testproj/v5.4/G/ident/TT_Op"},
+        qr{Comment mentions TT_IntToPtrOp but is not a reference},
+        qr{def not_in_code_block},
     ], 1;
 
 # Image blobs are previewed, not highlighted. SVG markup must stay out of
