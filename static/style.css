@@ -385,12 +385,7 @@ h2 {
   margin-right: 0.3em;
   opacity: 0.5;
 }
-.go-top,
-.poweredby {
-  float: right;
-}
-.poweredby {
-  font-style: italic;
+.go-top {
   float: right;
 }
 .go-top {
@@ -527,6 +522,10 @@ h2 {
   -webkit-box-flex: 1;
       -ms-flex: 1;
           flex: 1;
+  /* Share the column with the night-mode row. height:100% would push that
+     row out of the sidebar on desktop. */
+  height: auto;
+  min-height: 0;
 }
 
 .js .sidebar li li::before {
@@ -1124,7 +1123,8 @@ main {
   background: rgba(3, 8, 35, 0);
 }
 .sidebar .filter,
-.sidebar nav {
+.sidebar nav,
+.sidebar-night {
   width: 60%;
   max-width: 330px;
 }
@@ -1197,7 +1197,7 @@ main {
         -ms-flex: 0 0 235px;
             flex: 0 0 235px;
   }
-  .sidebar .filter, .sidebar nav {
+  .sidebar .filter, .sidebar nav, .sidebar-night {
     width: 100%;
   }
   .sidebar nav {
@@ -1859,4 +1859,410 @@ html.wrap-lines .lxrcode .linenodiv pre a {
 }
 .markdown-preview del {
   color: #666;
+}
+
+/* === Night mode =========================================================== */
+
+/* The sidebar is already dark. This row sits under the version tree. */
+
+.sidebar-night {
+  background: #111;
+  border-top: 1px solid #333;
+  padding: 0.75rem 1rem;
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  -webkit-box-flex: 0;
+      -ms-flex: 0 0 auto;
+          flex: 0 0 auto;
+}
+.night-mode {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  color: #eee;
+  font-size: 0.9em;
+  line-height: 1.3;
+  cursor: pointer;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+}
+.night-mode input {
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0;
+  accent-color: #8b98e8;
+  cursor: pointer;
+  -webkit-box-flex: 0;
+      -ms-flex: 0 0 auto;
+          flex: 0 0 auto;
+}
+.night-mode input:focus-visible {
+  outline: 2px solid #c5cdf5;
+  outline-offset: 2px;
+}
+
+/* Desktop sidebar is about one viewport tall and starts under the header, so
+   its flex end sits below the fold. Pin the switch to the visible bottom of
+   the open sidebar, just above the footer. Off-canvas when the sidebar is closed. */
+@media screen and (min-width: 1000px) {
+  .sidebar-night {
+    position: fixed;
+    left: 0;
+    bottom: 25px;
+    width: 235px;
+    max-width: none;
+    z-index: 40;
+  }
+  .js:not(.show-menu) .sidebar-night {
+    left: -235px;
+  }
+  .js .sidebar nav {
+    padding-bottom: 3.25rem;
+  }
+}
+
+/* html.night is set from <head> before this stylesheet paints. */
+
+html.night {
+  color-scheme: dark;
+  background: #0d1117;
+}
+html.night body {
+  background: #0d1117;
+  color: #c9d1d9;
+}
+html.night a {
+  color: #c9d1d9;
+}
+html.night pre {
+  color: #a8b3bd;
+}
+html.night h2 {
+  color: #b1bac4;
+}
+
+html.night .header {
+  background-color: #171c33;
+}
+html.night .header h1,
+html.night .header h1 a {
+  color: #fff;
+}
+html.night .header h2 {
+  color: #ffa264;
+}
+html.night .nav-links a {
+  color: #9da9ea;
+}
+html.night .nav-links a:hover {
+  color: #fff;
+}
+html.night .message-banner {
+  background: #21262d;
+  color: #e6edf3;
+  -webkit-box-shadow: none;
+          box-shadow: none;
+}
+html.night .message-banner .action-inner {
+  border-color: #8b949e;
+  color: #e6edf3;
+}
+
+html.night .topbar {
+  background: #161b22;
+}
+html.night .breadcrumb {
+  color: #a8b3bd;
+}
+html.night .breadcrumb a {
+  color: #c9d1d9;
+}
+html.night .breadcrumb a:hover {
+  color: #fff;
+}
+html.night .search input {
+  color: #e6edf3;
+  background: #0d1117;
+}
+html.night .search input:focus {
+  background: #161b22;
+}
+html.night .search select {
+  color: #e6edf3;
+  background-color: #21262d;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><path fill='%23c9d1d9' d='M8 12a1 1 0 0 1-.707-.293l-5-5a1 1 0 0 1 1.414-1.414L8 9.586l4.293-4.293a1 1 0 0 1 1.414 1.414l-5 5A1 1 0 0 1 8 12z'/></svg>");
+}
+html.night .search select:-moz-focusring {
+  color: rgba(0,0,0,0);
+  text-shadow: 0 0 0 #e6edf3;
+}
+html.night .search select:focus {
+  outline-color: #c9d1d9;
+}
+html.night .search option,
+html.night .select-projects option {
+  background-color: #161b22;
+  color: #e6edf3;
+}
+html.night .search button {
+  color: #c9d1d9;
+}
+html.night .search button:focus,
+html.night .search button:hover {
+  color: #fff;
+}
+
+html.night .footer {
+  background: #161b22;
+  color: #c9d1d9;
+}
+html.night .footer a,
+html.night .version a {
+  color: #c9d1d9;
+}
+html.night .go-top::before {
+  color: #c9d1d9;
+  background: #30363d;
+  -webkit-box-shadow: 0 0 0 1px #30363d;
+          box-shadow: 0 0 0 1px #30363d;
+}
+html.night .go-top:focus::before,
+html.night .go-top:hover::before {
+  color: #fff;
+  background: #484f58;
+  -webkit-box-shadow: 0 0 0 1px #484f58;
+          box-shadow: 0 0 0 1px #484f58;
+}
+
+html.night .filter-results a {
+  color: #fff;
+}
+html.night .sidebar nav a {
+  color: #fff;
+}
+html.night .sidebar nav a:hover,
+html.night .sidebar nav a:hover strong,
+html.night .sidebar nav li.active a {
+  color: #9aabff;
+}
+
+html.night #reference-popup,
+html.night #loading-popup {
+  background: #161b22;
+  color: #c9d1d9;
+  border-color: #30363d;
+}
+html.night #loading-popup {
+  color: #a8b3bd;
+}
+
+html.night .link {
+  color: #9aabff;
+}
+html.night #report-error-details-header {
+  color: #a8b3bd;
+}
+html.night .lxrident a {
+  color: #c9d1d9;
+}
+html.night .lxrident a strong {
+  color: #e6edf3;
+}
+html.night .lxrident a:hover {
+  border-bottom-color: #a8b3bd;
+}
+html.night .lxrident li li::before {
+  color: #8b949e;
+}
+html.night .lxrident > pre {
+  background-color: #1c2333;
+  color: #b7c5ff;
+}
+
+html.night .lxrtree tr:hover {
+  background: #21262d;
+}
+html.night .tree-icon.icon-back {
+  color: #c9d1d9;
+}
+
+html.night .linenodiv {
+  background: #161b22;
+}
+html.night .linenodiv pre a {
+  color: #a8b3bd;
+}
+html.night .linenodiv pre a:hover {
+  color: #e6edf3;
+  background: #21262d;
+}
+html.night .linenodiv pre a:focus {
+  color: #e6edf3;
+}
+html.night span[id^='codeline-'].line-highlight,
+html.night .line-highlight,
+html.night .linenodiv pre a:target {
+  background: #3a3416;
+}
+html.night .linenodiv pre span.line-highlight > a,
+html.night .linenodiv pre a:target {
+  color: #e6edf3;
+}
+
+html.night .highlight .code {
+  background: #0d1117;
+}
+html.night .highlight .code pre {
+  color: #e6edf3;
+}
+html.night .highlight .code a {
+  background: linear-gradient(to bottom, #0000 10%, #243044 10%, #243044 90%, #0000 90%);
+}
+html.night .highlight .code a:hover {
+  border-bottom-color: #e6edf3;
+}
+html.night .highlight .code .hll { background-color: #3a3416 }
+html.night .highlight .code .c,
+html.night .highlight .code .ch,
+html.night .highlight .code .cm,
+html.night .highlight .code .c1,
+html.night .highlight .code .cpf { color: #a8b3bd }
+html.night .highlight .code .cp { color: #8ec5e8 }
+html.night .highlight .code .cs { color: #ff9b9b }
+html.night .highlight .code .k,
+html.night .highlight .code .kc,
+html.night .highlight .code .kd,
+html.night .highlight .code .kn,
+html.night .highlight .code .kp,
+html.night .highlight .code .kr { color: #ff7b72 }
+html.night .highlight .code .kt,
+html.night .highlight .code .nc,
+html.night .highlight .code .nb,
+html.night .highlight .code .bp,
+html.night .highlight .code .ni,
+html.night .highlight .code .nl,
+html.night .highlight .code .nn,
+html.night .highlight .code .nv,
+html.night .highlight .code .vc,
+html.night .highlight .code .vg,
+html.night .highlight .code .vi,
+html.night .highlight .code .vm { color: #ffa657 }
+html.night .highlight .code .o,
+html.night .highlight .code .ow,
+html.night .highlight .code .p { color: #e6edf3 }
+html.night .highlight .code .s,
+html.night .highlight .code .sa,
+html.night .highlight .code .sb,
+html.night .highlight .code .sc,
+html.night .highlight .code .dl,
+html.night .highlight .code .sd,
+html.night .highlight .code .s2,
+html.night .highlight .code .se,
+html.night .highlight .code .sh,
+html.night .highlight .code .si,
+html.night .highlight .code .sx,
+html.night .highlight .code .sr,
+html.night .highlight .code .s1,
+html.night .highlight .code .ss { color: #a5d6ff }
+html.night .highlight .code .m,
+html.night .highlight .code .mb,
+html.night .highlight .code .mf,
+html.night .highlight .code .mh,
+html.night .highlight .code .mi,
+html.night .highlight .code .mo,
+html.night .highlight .code .il { color: #79c0ff }
+html.night .highlight .code .na,
+html.night .highlight .code .no,
+html.night .highlight .code .gh,
+html.night .highlight .code .gt { color: #79c0ff }
+html.night .highlight .code .nd,
+html.night .highlight .code .nf,
+html.night .highlight .code .fm,
+html.night .highlight .code .gu { color: #d2a8ff }
+html.night .highlight .code .ne,
+html.night .highlight .code .gr { color: #ffa198 }
+html.night .highlight .code .nt,
+html.night .highlight .code .gi,
+html.night .highlight .code .gp { color: #7ee787 }
+html.night .highlight .code .gd { color: #ffa198 }
+html.night .highlight .code .go { color: #a8b3bd }
+html.night .highlight .code .err { color: #ffa198; background-color: #5a1d1d }
+html.night .highlight .code .w { color: #6e7681 }
+
+html.night .autocomplete.open,
+html.night .autocomplete:active,
+html.night .autocomplete:focus,
+html.night .autocomplete:hover {
+  background-color: #21262d;
+}
+html.night .autocomplete > ul > li.active,
+html.night .autocomplete > ul > li:active,
+html.night .autocomplete > ul > li:focus,
+html.night .autocomplete > ul > li:hover {
+  background-color: #30363d;
+}
+html.night .autocomplete a {
+  color: #e6edf3;
+}
+
+html.night .markdown-preview {
+  color: #c9d1d9;
+}
+html.night .markdown-preview h1,
+html.night .markdown-preview h2,
+html.night .markdown-preview h3,
+html.night .markdown-preview h4,
+html.night .markdown-preview h5,
+html.night .markdown-preview h6 {
+  color: #e6edf3;
+}
+html.night .markdown-preview blockquote {
+  border-left-color: #30363d;
+  color: #a8b3bd;
+}
+html.night .markdown-preview a[href] {
+  color: #79c0ff;
+}
+html.night .markdown-preview a[href]:hover {
+  color: #a5d6ff;
+}
+html.night .markdown-preview :not(pre) > code {
+  background: #21262d;
+  color: #e6edf3;
+}
+html.night .markdown-preview pre {
+  background: #161b22;
+  color: #e6edf3;
+}
+html.night .markdown-preview th,
+html.night .markdown-preview td {
+  border-color: #30363d;
+}
+html.night .markdown-preview th {
+  background: #161b22;
+}
+html.night .markdown-preview hr {
+  border-top-color: #30363d;
+}
+html.night .markdown-preview del {
+  color: #a8b3bd;
+}
+
+html.night body::-webkit-scrollbar-corner,
+html.night body::-webkit-scrollbar-track,
+html.night .wrapper::-webkit-scrollbar-corner,
+html.night .wrapper::-webkit-scrollbar-track,
+html.night #reference-popup::-webkit-scrollbar-corner,
+html.night #reference-popup::-webkit-scrollbar-track {
+  background: #21262d;
+}
+html.night body::-webkit-scrollbar-thumb,
+html.night .wrapper::-webkit-scrollbar-thumb,
+html.night #reference-popup::-webkit-scrollbar-thumb {
+  background: #484f58;
 }

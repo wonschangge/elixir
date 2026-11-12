@@ -372,6 +372,51 @@ async function cycleBannerWithData(data, delay=500) {
   console.log("cycle finished");
 }
 
+// Night mode toggle at the bottom of the sidebar. The html.night class is
+// applied from an inline script in <head> (before CSS) using the same
+// localStorage key. A stored "true"/"false" wins over prefers-color-scheme;
+// with no stored value, a later system change still updates the page.
+function setupNightMode() {
+  const toggle = document.getElementById('night-mode');
+  if (toggle === null || toggle.dataset.nightBound === '1') {
+    return;
+  }
+  toggle.dataset.nightBound = '1';
+
+  const root = document.documentElement;
+  toggle.checked = root.classList.contains('night');
+
+  toggle.addEventListener('change', () => {
+    const on = toggle.checked;
+    root.classList.toggle('night', on);
+    try {
+      window.localStorage.setItem('night-mode', on ? 'true' : 'false');
+    } catch (e) {}
+  });
+
+  if (!window.matchMedia) {
+    return;
+  }
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  const onSchemeChange = () => {
+    let stored = null;
+    try {
+      stored = window.localStorage.getItem('night-mode');
+    } catch (e) {}
+    if (stored === 'true' || stored === 'false') {
+      return;
+    }
+    const on = mq.matches;
+    root.classList.toggle('night', on);
+    toggle.checked = on;
+  };
+  if (typeof mq.addEventListener === 'function') {
+    mq.addEventListener('change', onSchemeChange);
+  } else if (typeof mq.addListener === 'function') {
+    mq.addListener(onSchemeChange);
+  }
+}
+
 // Optional line wrapping for the highlighted file view. Default stays
 // unwrapped (horizontal scroll). Line-number anchors are stretched to the
 // wrapped code line so the two columns stay aligned.
@@ -492,6 +537,8 @@ if (document.readyState === 'loading') {
 }
 
 document.addEventListener('DOMContentLoaded', _ => {
+  setupNightMode();
+
   updateMessageBanner();
 
   setupVersionsFilter();
@@ -508,3 +555,7 @@ document.addEventListener('DOMContentLoaded', _ => {
     _ => document.getElementById('search-input').value = ''
   );
 });
+
+// The sidebar control is already in the DOM (this file is loaded at the end
+// of <body>). Bind now so the switch works before DOMContentLoaded.
+setupNightMode();
